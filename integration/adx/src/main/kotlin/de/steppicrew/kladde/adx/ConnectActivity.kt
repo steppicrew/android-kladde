@@ -141,24 +141,27 @@ internal fun ConnectScreen(
     onCancel: () -> Unit,
 ) {
     val choices = remember { mutableStateMapOf<String, StreamChoice>().apply { putAll(initial) } }
-    Column(
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Text(stringResource(R.string.adx_connect_title, senderLabel), style = MaterialTheme.typography.headlineSmall)
-        Text(stringResource(R.string.adx_connect_explainer), style = MaterialTheme.typography.bodyMedium)
-        for (proposal in proposals) {
-            StreamOptions(
-                proposal = proposal,
-                trackers = trackers.filter { AdxMapping.accepts(it, proposal) },
-                choice = choices[proposal.key] ?: StreamChoice.Decline,
-                onChoice = { choices[proposal.key] = it },
-            )
+    Column(Modifier.fillMaxSize()) {
+        Column(
+            Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text(stringResource(R.string.adx_connect_title, senderLabel), style = MaterialTheme.typography.headlineSmall)
+            Text(stringResource(R.string.adx_connect_explainer), style = MaterialTheme.typography.bodyMedium)
+            for (proposal in proposals) {
+                StreamOptions(
+                    proposal = proposal,
+                    trackers = trackers.filter { AdxMapping.accepts(it, proposal) },
+                    choice = choices[proposal.key] ?: StreamChoice.Decline,
+                    onChoice = { choices[proposal.key] = it },
+                )
+            }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Pinned below the list, so a sender with many streams is still one tap to allow.
+        Row(Modifier.padding(horizontal = 24.dp, vertical = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Button(onClick = { onAllow(choices.toMap()) }) { Text(stringResource(R.string.adx_connect_allow)) }
             OutlinedButton(onClick = onCancel) { Text(stringResource(R.string.adx_connect_cancel)) }
         }
@@ -222,13 +225,17 @@ private fun Locked(onClose: () -> Unit) {
 @Preview
 @Composable
 private fun ConnectScreenPreview() {
-    val beer = AdxStreamProposal("drinks.beer", "Beer", "counter", "count", listOf("Pils", "Weizen"))
+    // What the beer counter proposes: six counter streams at once.
+    val drinks =
+        listOf("Beer", "Wine", "Schnapps", "Cocktail", "Coffee", "Water").map { name ->
+            AdxStreamProposal("drinks.${name.lowercase()}", name, "counter", "count")
+        }
     MaterialTheme {
         ConnectScreen(
             senderLabel = "Steppi's Beer Counter",
-            proposals = listOf(beer),
+            proposals = drinks,
             trackers = emptyList(),
-            initial = mapOf(beer.key to StreamChoice.NewTracker),
+            initial = drinks.associate { it.key to StreamChoice.NewTracker },
             onAllow = {},
             onCancel = {},
         )
