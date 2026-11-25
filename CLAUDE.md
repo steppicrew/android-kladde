@@ -1,15 +1,20 @@
-# CLAUDE.md — App Diary
- 
-Guidance for Claude (and humans) working in this repository.
- 
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+# Kladde — private diary and data tracker (working name)
+
+Repo: `steppicrew/android-kladde` (private). Package / namespace: `de.steppicrew.kladde`;
+debug builds install side by side as `de.steppicrew.kladde.debug`.
+
 ## What this is
- 
+
 An Android app that combines a **private diary** with a **flexible personal data tracker**
 (blood pressure, drinks, workouts, mood, vacations, …), with **end-to-end encrypted sync**.
- 
+
 Core promise: *your data is readable only on your devices.* Any server or storage
 backend only ever sees ciphertext.
- 
+
 ### Product pillars
 1. **Diary** — mostly text (Markdown), one or more entries per day.
 2. **Trackers** — user-defined, timestamped data points with graphs and export.
@@ -25,12 +30,18 @@ backend only ever sees ciphertext.
 - iOS/desktop are out of scope for v1, but the data format and crypto must stay
   platform-neutral so other clients can be added later.
 ## Status
- 
+
 Early concept / pre-MVP. Items marked **(proposed)** are not final; check with the
 owner before treating them as fixed. Record decisions in `docs/decisions/` (ADR style).
- 
+
+What exists so far: the Gradle skeleton, a minimal `core/model` + `core/data` (trackers and
+data points in plain Room), and the ADX receiver in `integration/adx`. There is **no vault,
+no crypto and no sync yet** — `docs/crypto.md` doesn't exist yet; write it before
+`core/crypto`. `VaultLock` is a stub that is unlocked unless locked through the debug
+backdoor. Hilt and SQLCipher are not wired yet (manual wiring in `KladdeApp`).
+
 ## Tech stack (proposed)
- 
+
 | Area | Choice |
 |---|---|
 | Language | Kotlin |
@@ -45,10 +56,12 @@ owner before treating them as fixed. Record decisions in `docs/decisions/` (ADR 
 | Health data import | Android Health Connect (optional, opt-in) |
 | Charts | (open) Vico or a small custom Compose canvas implementation |
 | Build | Gradle Kotlin DSL, version catalog (`gradle/libs.versions.toml`) |
-| Min SDK | (open) proposed 26 |
- 
+| Toolchain | Same as ADX: AGP 8.13, Gradle 8.13, Kotlin 2.2.20, JDK 21, compile/target SDK 37 |
+| Min SDK | (open) proposed 26 — set to 26 for now |
+| App integration | ADX receiver (`../app-adx`, composite build); see below |
+
 ## Module layout (proposed)
- 
+
 ```
 app/                 Android app shell, navigation, DI wiring
 core/model/          Pure Kotlin domain models (no Android deps)
@@ -60,18 +73,17 @@ feature/trackers/    Tracker definitions, data entry, quick-add widgets
 feature/routines/    Planned tasks, recurrence, reminders, done/skip, calendar mirror
 feature/insights/    Graphs, overlays, correlations
 feature/export/      CSV/JSON/PDF export
-api/                 Integration API (AIDL service, intent receiver, consent handling)
-sdk/                 Client library for third-party apps (published separately)
+integration/adx/     ADX receiver: AdxStore on top of core/data, CONNECT approval screen
 docs/                Architecture notes, crypto spec, ADRs
 ```
- 
+
 `core/model`, `core/crypto` and the merge logic in `core/sync` must stay **free of Android
 dependencies** so they can be unit-tested on the JVM and reused by future clients.
- 
+
 ## Domain model
- 
+
 Everything is a **timestamped event**, not "one row per day".
- 
+
 - **Tracker** — a user-defined definition: name, icon, type, fields, unit(s), presets.
 - **DataPoint** — one measurement/event of a tracker at a point in time (or a time range).
 - **DiaryEntry** — Markdown text with a timestamp; may reference DataPoints of that day.
@@ -105,10 +117,10 @@ Rules:
   existing data points.
 - Units are stored explicitly with values; never assume a unit.
 ## Routines & reminders
- 
+
 Example: "Workout every day at 18:00 except Wednesday and Thursday" →
 `RRULE:FREQ=WEEKLY;BYDAY=MO,TU,FR,SA,SU` + local time `18:00` (floating, see below).
- 
+
 Model:
 - Recurrence uses **RFC 5545 RRULE** semantics (daily/weekly/monthly, BYDAY, INTERVAL,
   UNTIL/COUNT) plus `EXDATE` for single exceptions ("not this Friday"). The UI offers
@@ -205,37 +217,44 @@ Locked vault + notification actions:
   encrypted to the vault's public key (libsodium sealed box). The device can write it
   but can't read it until unlocked; on next unlock it is merged into the op-log. This
   keeps "tap Done from the notification" working without keeping VK in memory.
-## Integration API for other apps (proposed)
- 
-Other apps (first test client: the owner's beer counter app, "Steppi's Beer Counter")
-can log data into the diary.
- 
-- **Write-only by default.** Third-party apps can add, update and delete *their own* data
-  points; they can't read anything. Read access, if ever, is a separate opt-in per tracker.
-- **Works while the vault is locked:** incoming data is encrypted on arrival to the
-  vault public key (sealed box), stored as pending, and merged into the op-log on next
-  unlock — same mechanism as notification actions.
-- **Transport:** an exported, permission-protected bound service (AIDL) for apps using
-  the SDK, plus a simple intent action (`<appId>.action.LOG_DATA_POINT`) so automation
-  tools like Tasker can log too.
-- **Consent per calling app:** the first call from a package triggers an in-app approval
-  ("Steppi's Beer Counter wants to log to *Beer*"), bound to package name **and** signing
-  certificate digest. Users can revoke it at any time; a revoked app's calls are rejected.
-- **Tracker mapping:** the calling app may propose a tracker definition (name, type, unit,
-  e.g. `COUNTER` "Beer", sub-types "Pils", "Weizen"); the user accepts it, or maps it
-  to an existing tracker.
-- **Idempotency:** every call carries a client-generated `externalId`; repeated calls
-  with the same ID update instead of duplicating. Deletes reference `externalId`.
-- Data points remember their **source app** (shown in the UI, filterable, and exportable).
-- **Client SDK:** a small AAR (`diary-sdk`) with a typed Kotlin API, and a documented,
-  versioned schema so apps can integrate without the SDK.
-- Rate-limit and size-limit incoming calls; validate everything against the tracker type.
+## Integration API for other apps: ADX
+
+Other apps (first: "Steppi's Beer Counter") log data into Kladde through **ADX — App Data
+Exchange**, the owner's own library in `../app-adx` (decision: `docs/decisions/0001-app-integration-via-adx.md`).
+The wire format, consent model and status codes are defined in
+`../app-adx/docs/ADX-SPEC.md` — read it there, don't restate it here. Kladde is a
+*receiver*; senders use `adx-sender`, so Kladde ships no SDK of its own.
+
+What ADX does for us (`adx-receiver`): exported submit service + broadcast, caller identity
+from the binder uid / `PendingIntent` creator, consent per package **and** signing cert,
+version check, limits, validation, and the rev rule (entries keyed by
+(sender, stream, id); equal rev → `DUPLICATE`, lower → `STALE`).
+
+What Kladde does (`integration/adx`):
+- `KladdeAdxStore : AdxStore` — maps ADX ops onto data points. Each data point keeps its
+  **source** (sender package, stream, ADX id, rev); deletes keep a tombstone row with the
+  rev. The full op JSON is kept so unknown fields and attrs aren't lost.
+- `ConnectActivity` — the approval screen: per proposed stream, create a new tracker,
+  map to an existing tracker of the same type, or decline. `AdxStreamGrant.target` holds
+  the Kladde tracker UUID.
+- Revoking a sender: `AdxReceiver.revoke(packageName)`.
+
+**Locked vault — current behaviour (option B):** while the vault is locked, every
+`AdxStore` call throws `AdxBusyException`; the sender keeps the ops in its outbox and
+retries with backoff (up to 6 h). **TODO — option A:** accept while locked — `currentRev()`
+returns `null`, upserts/deletes are written as sealed-box pending records (same mechanism
+as pending routine completions), and the rev rule is applied again when they are merged
+on unlock. Needs `core/crypto` first. Until then a locked Kladde does *not* honour the
+spec's "a locked Kladde encrypts on arrival" sentence.
+
+Known metadata outside the vault: ADX's consent store (plain SQLite) holds sender package
+names, labels and the stream → tracker mapping. It must stay readable while locked.
 ## Calendar mirror (optional, proposed)
- 
+
 Routine occurrences can be mirrored into the Android calendar (via `CalendarContract`),
 so they show up in any calendar app and in calendars synced elsewhere (Google, or
 Nextcloud via DAVx⁵).
- 
+
 - **One-way, app → calendar** in v1. The app is the source of truth and rewrites the
   mirrored events on every change (moves, extras, cancellations, pauses).
 - Target: either an **app-owned local calendar** (stays on the device, not synced) or a
@@ -254,9 +273,9 @@ Nextcloud via DAVx⁵).
 - **Later (maybe):** two-way — detect when the user drags a mirrored event in the
   calendar app and turn that into a "move" in the app.
 ## Encryption (must-read before touching `core/crypto` or `core/sync`)
- 
+
 Full spec goes in `docs/crypto.md`. Summary of the intended design:
- 
+
 - **Vault key (VK):** random 256-bit key that encrypts all user data.
 - **Passphrase:** the user's vault passphrase → Argon2id (parameters stored with the
   vault) → key-encryption key (KEK) → wraps VK. Only the wrapped VK is ever synced.
@@ -279,9 +298,9 @@ Hard rules:
 - Every encrypted format carries a version number; keep decoders for old versions.
 - Crypto changes need tests with known-answer vectors and must be noted in an ADR.
 ## Sync (proposed design)
- 
+
 Goal: work on "dumb" storage (plain WebDAV) without a smart server.
- 
+
 - Each device keeps an **append-only operation log** (create/update/delete ops with a
   hybrid logical clock timestamp + device ID).
 - Ops are batched, encrypted and uploaded as immutable segment files under a
@@ -295,7 +314,7 @@ Goal: work on "dumb" storage (plain WebDAV) without a smart server.
   on the backend.
 - Sync must be resumable, idempotent and safe to interrupt at any point.
 ## Export
- 
+
 - CSV per tracker (one row per data point, ISO-8601 timestamps, explicit unit columns).
 - Full JSON export of everything (documented schema, versioned) — this is the user's
   "no lock-in" guarantee, so keep it complete and stable.
@@ -303,7 +322,7 @@ Goal: work on "dumb" storage (plain WebDAV) without a smart server.
 - Exports produce plaintext: always warn the user and use the Android share sheet /
   SAF; never write exports silently to shared storage.
 ## Privacy & legal
- 
+
 - Blood pressure and similar values are health data (GDPR Art. 9). The E2EE design is
   what keeps the hosted service from ever processing them in plaintext — don't weaken it.
 - No third-party SDKs that phone home. Any new dependency with network access needs
@@ -311,7 +330,7 @@ Goal: work on "dumb" storage (plain WebDAV) without a smart server.
 - Health Connect access is opt-in, per data type, and revocable.
 - Aim for an F-Droid-compatible build flavor (no proprietary dependencies).
 ## Coding conventions
- 
+
 - Kotlin official style; ktlint + detekt must pass.
 - Compose: stateless composables + state hoisting; previews for UI components.
 - No business logic in ViewModels beyond orchestration — put it in use cases / repositories.
@@ -320,7 +339,7 @@ Goal: work on "dumb" storage (plain WebDAV) without a smart server.
 - Strings in `strings.xml`; the app ships in **German and English** from the start.
 - Accessibility: content descriptions, sufficient contrast, scalable text.
 ## Testing
- 
+
 - Unit tests (JVM) for `core/model`, `core/crypto`, `core/sync` — these are the critical parts.
 - Sync merge logic: property-based / randomized tests (multiple simulated devices,
   random op orders, interrupted uploads) must converge to the same state.
@@ -332,9 +351,10 @@ Goal: work on "dumb" storage (plain WebDAV) without a smart server.
   the reminder time — exactly one occurrence per local date, no duplicate reminders.
 - Overrides: move, swap, add extra, cancel; moving a completed occurrence; a moved
   occurrence landing on a paused day or on a day that already has one.
-- Integration API: unapproved/revoked/spoofed callers are rejected (wrong signing cert),
-  duplicate `externalId`s don't duplicate, calls while locked merge exactly once,
-  invalid values are rejected.
+- ADX store: upsert/delete/tombstone, a new `sub` extends the tracker, a missing target
+  tracker is recreated once, locked vault → `AdxBusyException`. Caller identity, consent,
+  rev rule and validation are tested in `../app-adx`; don't duplicate them here. With
+  option A: calls while locked merge exactly once.
 - Block rules: blocker cancelled → blocked occurrence reappears; blocker moved → block
   moves with it; paused blocker doesn't block; offsets; tag-based rules; manual override on
   a blocked day; SHIFT behaviour; cycle rejection; chains (A blocks B blocks C).
@@ -346,16 +366,35 @@ Goal: work on "dumb" storage (plain WebDAV) without a smart server.
   a locked vault merge exactly once.
 - UI: Compose tests for critical flows (setup, unlock, quick-add, export).
 ## Commands
- 
+
+JDK 21 is required for every Gradle call (the system default JDK 25 is rejected by
+Gradle 8.13). `../app-adx` must be checked out next to this repo: `settings.gradle.kts`
+pulls it in with `includeBuild`, so ADX changes are picked up without publishing.
+
 ```bash
-./gradlew assembleDebug          # build
-./gradlew test                   # JVM unit tests
-./gradlew connectedAndroidTest   # instrumented tests (device/emulator)
-./gradlew ktlintCheck detekt     # lint
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+./gradlew assembleDebug                                   # build
+./gradlew test                                            # all unit tests
+./gradlew :core:model:test                                # pure JVM module
+./gradlew :integration:adx:testDebugUnitTest --tests '*KladdeAdxStoreTest*'   # one class
+./gradlew connectedAndroidTest                            # instrumented tests (device/emulator)
+./gradlew ktlintCheck detekt                              # lint
 ```
- 
+
+On the phone (see the `android-device-testing` skill), the debug build has a `cmd` extra,
+read only in `src/debug` (the `src/release` twin returns null). Logs use tag `Kladde`:
+
+```bash
+adb shell am start -n de.steppicrew.kladde.debug/de.steppicrew.kladde.MainActivity -e cmd lock
+# cmd: lock | unlock | status
+adb logcat -d -s Kladde AdxReceiver
+```
+
+End-to-end tests against ADX use the sample sender from `../app-adx`
+(`de.steppicrew.adx.sample.sender.debug`, see its CLAUDE.md for its commands).
+
 ## Working agreements for Claude
- 
+
 - Read `docs/crypto.md` and the relevant ADRs before changing crypto, sync or storage formats.
 - Don't change on-disk or on-wire formats without bumping the format version and adding
   a migration path.
@@ -365,7 +404,7 @@ Goal: work on "dumb" storage (plain WebDAV) without a smart server.
   it, ask instead of deciding silently.
 - Keep this file up to date when decisions are made.
 ## Open questions
- 
+
 - App name — current favourite: **Kladde**. Runner-up: **Tageslauf** (English:
   "Course of the Day"). Not final until Play Store, trademark (DPMA/EUIPO/TMview,
   classes 9 and 42) and domain checks are done.
@@ -383,4 +422,7 @@ Goal: work on "dumb" storage (plain WebDAV) without a smart server.
   routines? Useful, but needs calendar read permission and a matching rule (calendar/keyword).
 - Calendar mirror: in v1 or later? Two-way edits worth the complexity?
 - Hosted sync backend: hosting location (EU/Germany), stack, billing.
- 
+- ADX has no licence file yet — needs one compatible with Kladde's licence before an
+  F-Droid build can include it.
+- ADX locked-vault behaviour: switch from option B (BUSY) to option A (sealed-box pending)
+  once `core/crypto` exists — see "Integration API for other apps: ADX".
