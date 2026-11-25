@@ -36,6 +36,12 @@ internal interface SubTypeLabelDao {
     @Query("SELECT * FROM sub_type_labels WHERE id = :id")
     fun find(id: String): SubTypeLabelEntity?
 
+    @Query("SELECT * FROM sub_type_labels WHERE tracker_id = :trackerId AND label_key = :key")
+    fun findByKey(
+        trackerId: String,
+        key: String,
+    ): SubTypeLabelEntity?
+
     @Query("SELECT * FROM sub_type_labels WHERE status = 'OPEN' ORDER BY created_at")
     fun observeOpen(): Flow<List<SubTypeLabelEntity>>
 

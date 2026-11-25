@@ -36,6 +36,28 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun `2 to 3 keeps label records and gives them empty sender columns`() {
+        helper.createDatabase(DB, 2).use { db ->
+            db.execSQL(
+                "INSERT INTO sub_type_labels " +
+                    "(id, tracker_id, label_key, status, created_at, display_name, defaults, attr_keys, source_package) " +
+                    "VALUES ('l1', 't1', 'Pils', 'SPECIFIED', 0, NULL, '{\"intake.abv_pct\":5.0}', '', 'beer.app')",
+            )
+        }
+
+        helper.runMigrationsAndValidate(DB, 3, true).use { db ->
+            db.query("SELECT status, defaults, sender_label, sender_defaults, source_stream FROM sub_type_labels").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("SPECIFIED", cursor.getString(0))
+                assertEquals("{\"intake.abv_pct\":5.0}", cursor.getString(1))
+                assertEquals(null, cursor.getString(2))
+                assertEquals("{}", cursor.getString(3))
+                assertEquals(null, cursor.getString(4))
+            }
+        }
+    }
+
     private fun androidx.sqlite.db.SupportSQLiteDatabase.count(table: String): Int =
         query("SELECT COUNT(*) FROM $table").use { cursor ->
             cursor.moveToFirst()

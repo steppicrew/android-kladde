@@ -14,6 +14,14 @@ class SubTypeLabelTest {
     }
 
     @Test
+    fun `the user's name beats the sending app's, which beats the key`() {
+        val described = small.copy(senderLabel = "Small beer")
+
+        assertEquals("Small beer", described.shownName)
+        assertEquals("Kleines Bier", described.copy(displayName = "Kleines Bier").shownName)
+    }
+
+    @Test
     fun `a blank display name shows the key`() {
         assertEquals("beerSmall", small.copy(displayName = "  ").shownName)
     }

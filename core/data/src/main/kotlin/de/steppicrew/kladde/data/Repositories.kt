@@ -88,6 +88,14 @@ class SubTypeLabelRepository(
 ) {
     fun find(id: String): SubTypeLabel? = db.subTypeLabels().find(id)?.toModel()
 
+    fun findByKey(
+        trackerId: String,
+        key: String,
+    ): SubTypeLabel? = db.subTypeLabels().findByKey(trackerId, key)?.toModel()
+
+    /** Stores [label] over its earlier version; for what the sending app says about it. */
+    fun update(label: SubTypeLabel) = db.subTypeLabels().save(label.toEntity())
+
     fun observeOpen(): Flow<List<SubTypeLabel>> = db.subTypeLabels().observeOpen().map { list -> list.map { it.toModel() } }
 
     fun observeAll(): Flow<List<SubTypeLabel>> = db.subTypeLabels().observeAll().map { list -> list.map { it.toModel() } }

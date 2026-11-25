@@ -77,19 +77,25 @@ internal fun DataPoint.toEntity(deleted: Boolean = false) =
         deleted = deleted,
     )
 
-internal fun SubTypeLabelEntity.toModel(): SubTypeLabel {
-    val json = JSONObject(defaults)
-    return SubTypeLabel(
+internal fun SubTypeLabelEntity.toModel(): SubTypeLabel =
+    SubTypeLabel(
         id = id,
         trackerId = trackerId,
         key = key,
         status = SubTypeLabelStatus.valueOf(status),
         createdAt = Instant.ofEpochMilli(createdAt),
         displayName = displayName,
-        defaults = json.keys().asSequence().associateWith { json.getDouble(it) },
+        defaults = numbers(defaults),
         attrKeys = if (attrKeys.isEmpty()) emptyList() else attrKeys.split(SUB_TYPE_SEPARATOR),
         sourcePackage = sourcePackage,
+        sourceStream = sourceStream,
+        senderLabel = senderLabel,
+        senderDefaults = numbers(senderDefaults),
     )
+
+private fun numbers(json: String): Map<String, Double> {
+    val obj = JSONObject(json)
+    return obj.keys().asSequence().associateWith { obj.getDouble(it) }
 }
 
 internal fun SubTypeLabel.toEntity() =
@@ -103,4 +109,7 @@ internal fun SubTypeLabel.toEntity() =
         defaults = JSONObject(defaults).toString(),
         attrKeys = attrKeys.joinToString(SUB_TYPE_SEPARATOR),
         sourcePackage = sourcePackage,
+        sourceStream = sourceStream,
+        senderLabel = senderLabel,
+        senderDefaults = JSONObject(senderDefaults).toString(),
     )

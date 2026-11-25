@@ -76,6 +76,22 @@ class SubTypeLabelRepositoryTest {
         assertNull(record())
     }
 
+    @Test
+    fun `what the sending app says is stored apart from the user's answer`() {
+        val label = record()!!
+        labels.update(
+            label.copy(sourceStream = "drinks.beer", senderLabel = "Small beer", senderDefaults = mapOf("intake.volume_ml" to 330.0)),
+        )
+        labels.specify(label.id, "Kleines", mapOf("intake.volume_ml" to 300.0))
+
+        val stored = labels.findByKey("t1", "beerSmall")!!
+        assertEquals("drinks.beer", stored.sourceStream)
+        assertEquals("Small beer", stored.senderLabel)
+        assertEquals(mapOf("intake.volume_ml" to 330.0), stored.senderDefaults)
+        assertEquals("Kleines", stored.displayName)
+        assertEquals(mapOf("intake.volume_ml" to 300.0), stored.defaults)
+    }
+
     private fun <T> assertNotNull(value: T?): T {
         assertTrue("expected a value", value != null)
         return value!!

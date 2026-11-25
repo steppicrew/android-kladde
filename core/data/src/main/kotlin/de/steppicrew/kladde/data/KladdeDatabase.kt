@@ -9,9 +9,9 @@ import androidx.room.RoomDatabase
 /** Plain Room for now; moves onto SQLCipher with the vault key once core/crypto exists. */
 @Database(
     entities = [TrackerEntity::class, DataPointEntity::class, SubTypeLabelEntity::class],
-    version = 2,
-    // 2 only adds sub_type_labels.
-    autoMigrations = [AutoMigration(from = 1, to = 2)],
+    version = 3,
+    // 2 only adds sub_type_labels; 3 only adds columns to it.
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3)],
 )
 abstract class KladdeDatabase : RoomDatabase() {
     internal abstract fun trackers(): TrackerDao

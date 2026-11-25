@@ -12,11 +12,15 @@ enum class SubTypeLabelStatus {
 
     /** Named and, where it has any, given default values. */
     SPECIFIED,
+
+    /** The sending app named it and gave every value Kladde would ask for: nothing to ask. */
+    DESCRIBED,
 }
 
 /**
  * The user's view of one sub type of a tracker, such as `beerSmall` sent by another app.
- * [key] is the label as the entries carry it and never changes; [displayName] is what Kladde shows.
+ * [key] is the label as the entries carry it and never changes. What the user entered in Kladde
+ * ([displayName], [defaults]) beats what the sending app said ([senderLabel], [senderDefaults]).
  */
 data class SubTypeLabel(
     val id: String,
@@ -31,7 +35,13 @@ data class SubTypeLabel(
     val attrKeys: List<String> = emptyList(),
     /** The app whose entry brought the label, if one did. */
     val sourcePackage: String? = null,
+    /** That app's stream the label came in on. */
+    val sourceStream: String? = null,
+    /** The sending app's name for the label, in its current language. */
+    val senderLabel: String? = null,
+    /** The sending app's default values for the label, by attr key. */
+    val senderDefaults: Map<String, Double> = emptyMap(),
 ) {
-    /** What to show for the label: its display name, or the key while it has none. */
-    val shownName: String get() = displayName?.takeIf { it.isNotBlank() } ?: key
+    /** What to show for the label: the user's name, else the sending app's, else the key. */
+    val shownName: String get() = listOfNotNull(displayName, senderLabel).firstOrNull { it.isNotBlank() } ?: key
 }

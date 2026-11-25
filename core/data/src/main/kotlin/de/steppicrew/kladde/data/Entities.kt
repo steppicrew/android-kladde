@@ -70,6 +70,10 @@ internal data class SubTypeLabelEntity(
     /** Attr keys joined by [SUB_TYPE_SEPARATOR]; empty when there are none. */
     @ColumnInfo(name = "attr_keys") val attrKeys: String,
     @ColumnInfo(name = "source_package") val sourcePackage: String?,
+    @ColumnInfo(name = "source_stream") val sourceStream: String?,
+    @ColumnInfo(name = "sender_label") val senderLabel: String?,
+    /** The sending app's defaults as a JSON object of attr key to number. */
+    @ColumnInfo(name = "sender_defaults", defaultValue = "{}") val senderDefaults: String,
 )
 
 internal const val SUB_TYPE_SEPARATOR = "\u001F"
