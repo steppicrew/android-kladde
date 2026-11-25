@@ -136,19 +136,26 @@ usable on the phone before the next:**
 4. Vacations: a pause from–until for **all routines by default**, or only chosen ones. **Built.**
 5. Then reminders (notifications with Erledigt / Auslassen). **Not in the first version.**
 
+Added at the owner's request after step 4 (**built**): monthly schedules ("1st and 3rd Monday",
+"last Friday", "on the 1st and 15th"), extra one-off days ("Rüdersdorf this Friday too", an
+RDATE), and schedule changes that apply only from the edited event on (schedule versions).
+
 - **One kind of item** for tasks and events: "Sport" and "Rüdersdorf" are both routines;
   ticking off (`checkable`) is a switch per routine. A non-checkable routine just happens and
   is never missed. Anything can be a condition for anything.
 - The owner found the ADX label work too complicated: keep routines simple in what the user
   sees. Out of the first version: linked trackers, calendar mirror, streaks and statistics,
-  `TIME_OVERLAP`/`SHIFT`/offsets/tags in block rules, schedule versions (`validFrom`).
+  `TIME_OVERLAP`/`SHIFT`/offsets/tags in block rules.
 - Built so far: `Routine` + `Recurrence` (every day / weekdays / every N days, stored as an
   RRULE subset), `BlockRule`, `OccurrenceOverride`, `RoutinePause` and `RoutinePlan`
   (which derives every day's status) in `core/model`; tables `routines`,
   `routine_completions` (DB 4), `block_rules` (5), `occurrence_overrides` (6),
-  `routine_pauses` (7); screens in `feature/routines`. A changed schedule starts the day it
-  is saved. A move changes the date only, not the time. Deleting a routine drops a pause
-  that named only it (an empty list would mean all routines).
+  `routine_pauses` (7), `routine_extras` (8), `routine_schedule_versions` (9); screens in
+  `feature/routines`. A change to repeat or time applies from the event the form was opened
+  at (`Routine.withSchedule`); name, ticking off and conditions change throughout. A move
+  changes the date only, not the time. An extra on a day the routine is planned anyway adds
+  nothing. Deleting a routine drops a pause that named only it (an empty list would mean
+  all routines).
 
 The full design below is the target; the first version is the subset above.
 

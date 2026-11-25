@@ -7,27 +7,68 @@ import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
 /**
+ * A schedule a routine had before it was changed: [recurrence] and [time] from [validFrom] until
+ * the next version starts. Every N days counts from [validFrom].
+ */
+data class ScheduleVersion(
+    val validFrom: LocalDate,
+    val recurrence: Recurrence,
+    val time: LocalTime?,
+) {
+    fun matches(date: LocalDate): Boolean =
+        when (recurrence) {
+            is Recurrence.EveryNDays -> ChronoUnit.DAYS.between(validFrom, date) % recurrence.interval == 0L
+            else -> recurrence.matches(date)
+        }
+}
+
+/**
  * A planned, recurring thing: a task like "Sport" that is ticked off, or an event like
  * "Rüdersdorf" that just happens ([checkable] false). One kind of item for both.
+ *
+ * [recurrence] and [time] are the schedule from [startDate] on; a change applies from the event it
+ * was made at, so the days before keep the schedules in [earlier].
  */
 data class Routine(
     val id: String,
     val title: String,
     val recurrence: Recurrence,
-    /** The first day it can happen, and where every N days counts from. */
+    /** Where the current schedule starts, and where every N days counts from. */
     val startDate: LocalDate,
     /** Wall-clock time in whatever zone the device is in (floating); null for no set time. */
     val time: LocalTime?,
     val checkable: Boolean,
     val createdAt: Instant,
+    /** The schedules before [startDate], oldest first; the first one's start is the routine's. */
+    val earlier: List<ScheduleVersion> = emptyList(),
 ) {
-    /** Whether the schedule has an occurrence on [date]. */
-    fun occursOn(date: LocalDate): Boolean {
-        if (date.isBefore(startDate)) return false
-        return when (recurrence) {
-            is Recurrence.EveryNDays -> ChronoUnit.DAYS.between(startDate, date) % recurrence.interval == 0L
-            else -> recurrence.matches(date)
-        }
+    private val current get() = ScheduleVersion(startDate, recurrence, time)
+
+    /** The schedule in effect on [date], or null before the routine began. */
+    private fun versionOn(date: LocalDate): ScheduleVersion? =
+        if (!date.isBefore(startDate)) current else earlier.lastOrNull { !date.isBefore(it.validFrom) }
+
+    /** Whether the schedule in effect on [date] has an occurrence then. */
+    fun occursOn(date: LocalDate): Boolean = versionOn(date)?.matches(date) == true
+
+    /** The time the occurrence on [date] has under the schedule in effect then. */
+    fun timeOn(date: LocalDate): LocalTime? = (versionOn(date) ?: current).time
+
+    /** The first day the routine can happen. */
+    val firstDay: LocalDate get() = earlier.firstOrNull()?.validFrom ?: startDate
+
+    /**
+     * This routine with [recurrence] and [time] from [from] on; the days before keep what they had.
+     * A change before the routine began applies from its first day.
+     */
+    fun withSchedule(
+        recurrence: Recurrence,
+        time: LocalTime?,
+        from: LocalDate,
+    ): Routine {
+        val start = maxOf(from, firstDay)
+        val kept = (earlier + current).filter { it.validFrom.isBefore(start) }
+        return copy(recurrence = recurrence, time = time, startDate = start, earlier = kept)
     }
 }
 
@@ -82,6 +123,9 @@ data class Occurrence(
     /** Added on a day the schedule doesn't have ([RoutineExtra]). */
     val isExtra: Boolean = false,
 ) {
+    /** Its time under the schedule in effect on the day it was planned for. */
+    val time: LocalTime? get() = routine.timeOn(originalDate)
+
     val isMoved: Boolean get() = originalDate != date
 }
 

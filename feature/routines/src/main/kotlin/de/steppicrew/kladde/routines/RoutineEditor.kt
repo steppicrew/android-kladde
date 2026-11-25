@@ -44,6 +44,7 @@ import de.steppicrew.kladde.model.NthWeekday
 import de.steppicrew.kladde.model.Recurrence
 import de.steppicrew.kladde.model.Routine
 import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -54,6 +55,8 @@ import java.time.format.TextStyle
 internal fun RoutineEditor(
     initial: RoutineDraft,
     isNew: Boolean,
+    /** For an edit: the day a change to repeat or time applies from. */
+    scheduleFrom: LocalDate,
     blockerChoices: List<Routine>,
     onSave: (RoutineDraft) -> Unit,
     onDelete: () -> Unit,
@@ -71,6 +74,15 @@ internal fun RoutineEditor(
                 stringResource(if (isNew) R.string.routines_new else R.string.routines_change),
                 style = MaterialTheme.typography.headlineSmall,
             )
+            if (!isNew) {
+                Text(
+                    stringResource(
+                        R.string.routines_change_from,
+                        scheduleFrom.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)),
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
             OutlinedTextField(
                 value = draft.title,
                 onValueChange = { draft = draft.copy(title = it) },
@@ -180,6 +192,7 @@ private val DraftSaver =
         },
     )
 
+@Suppress("MagicNumber") // A sample date.
 @Preview
 @Composable
 private fun RoutineEditorPreview() {
@@ -187,6 +200,7 @@ private fun RoutineEditorPreview() {
         RoutineEditor(
             initial = RoutineDraft("Rüdersdorf", Repeat.WEEKDAYS, days = setOf(DayOfWeek.WEDNESDAY), checkable = false),
             isNew = false,
+            scheduleFrom = LocalDate.of(2026, 11, 25),
             blockerChoices = emptyList(),
             onSave = {},
             onDelete = {},

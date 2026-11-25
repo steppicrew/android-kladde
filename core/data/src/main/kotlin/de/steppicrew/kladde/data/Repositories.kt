@@ -12,6 +12,7 @@ import de.steppicrew.kladde.model.SubTypeLabel
 import de.steppicrew.kladde.model.SubTypeLabelStatus
 import de.steppicrew.kladde.model.Tracker
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 
@@ -135,7 +136,11 @@ class RoutineRepository(
     private val db: KladdeDatabase,
 ) {
     /** A routine whose stored rule this version can't read is left out, not dropped. */
-    fun observeAll(): Flow<List<Routine>> = db.routines().observeAll().map { list -> list.mapNotNull { it.toModel() } }
+    fun observeAll(): Flow<List<Routine>> =
+        combine(db.routines().observeAll(), db.scheduleVersions().observeAll()) { routines, versions ->
+            val byRoutine = versions.groupBy { it.routineId }
+            routines.mapNotNull { it.toModel(byRoutine[it.id].orEmpty()) }
+        }
 
     fun observeCompletions(
         from: LocalDate,
@@ -154,6 +159,8 @@ class RoutineRepository(
         blockers: Set<String> = emptySet(),
     ) = db.runInTransaction {
         db.routines().save(routine.toEntity())
+        db.scheduleVersions().deleteAllOf(routine.id)
+        db.scheduleVersions().insert(routine.versionEntities())
         db.blockRules().deleteRulesOf(routine.id)
         db.blockRules().insertRules(blockers.map { BlockRuleEntity(routine.id, it) })
     }
@@ -202,6 +209,7 @@ class RoutineRepository(
             db.overrides().deleteAllOf(id)
             db.extras().removeAllOf(id)
             db.blockRules().deleteRulesWith(id)
+            db.scheduleVersions().deleteAllOf(id)
             db.routines().delete(id)
         }
 

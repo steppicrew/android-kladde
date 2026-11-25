@@ -38,13 +38,7 @@ fun RoutinesScreen(
     pauseRepository: RoutinePauseRepository,
     extraRepository: RoutineExtraRepository,
 ) {
-    val today by produceState(LocalDate.now()) {
-        // Moves on to the next day at midnight while the screen is open.
-        while (true) {
-            delay(MINUTE_MS)
-            value = LocalDate.now()
-        }
-    }
+    val today = rememberToday()
     val from = today.minusDays(1)
     val to = today.plusDays(DAYS_AHEAD)
     val routines by repository.observeAll().collectAsStateWithLifecycle(emptyList())
@@ -63,9 +57,11 @@ fun RoutinesScreen(
 
     // Null: the week; "" a new routine; else the id of the routine being changed.
     var editing by rememberSaveable { mutableStateOf<String?>(null) }
+    // The event the form was opened at: a schedule change applies from its day on.
+    var editingFrom by rememberSaveable { mutableStateOf<String?>(null) }
     val current = editing
     if (current != null) {
-        EditRoutine(current, routines, rules, repository, ::io) { editing = null }
+        EditRoutine(current, editingFrom?.let(LocalDate::parse) ?: today, routines, rules, repository, ::io) { editing = null }
         return
     }
     var showPauses by rememberSaveable { mutableStateOf(false) }
@@ -91,10 +87,17 @@ fun RoutinesScreen(
         onAnswer = { occurrence, status -> io { repository.answer(occurrence, status) } },
         onReopen = { occurrence -> io { repository.reopen(occurrence.routine.id, occurrence.originalDate) } },
         onOpen = { menuFor = it },
-        onAdd = { editing = "" },
+        onAdd = {
+            editing = ""
+            editingFrom = null
+        },
     )
     menuFor?.let { occurrence ->
-        ChangeOccurrence(occurrence, repository, extraRepository, ::io, onEdit = { editing = occurrence.routine.id }) { menuFor = null }
+        val onEdit = {
+            editing = occurrence.routine.id
+            editingFrom = occurrence.originalDate.toString()
+        }
+        ChangeOccurrence(occurrence, repository, extraRepository, ::io, onEdit) { menuFor = null }
     }
 }
 
@@ -130,6 +133,18 @@ private fun ChangeOccurrence(
 
 private const val MINUTE_MS = 60_000L
 
+/** Today, moving on to the next day at midnight while the screen is open. */
+@Composable
+private fun rememberToday(): LocalDate {
+    val today by produceState(LocalDate.now()) {
+        while (true) {
+            delay(MINUTE_MS)
+            value = LocalDate.now()
+        }
+    }
+    return today
+}
+
 /** Records done or skipped, under the day the occurrence was planned for. */
 private fun RoutineRepository.answer(
     occurrence: Occurrence,
@@ -140,6 +155,7 @@ private fun RoutineRepository.answer(
 @Composable
 private fun EditRoutine(
     id: String,
+    from: LocalDate,
     routines: List<Routine>,
     rules: List<BlockRule>,
     repository: RoutineRepository,
@@ -151,10 +167,11 @@ private fun EditRoutine(
     RoutineEditor(
         initial = routine?.let { RoutineDraft.of(it, rules) } ?: RoutineDraft(),
         isNew = routine == null,
+        scheduleFrom = from,
         // What it can give way to: the others, bar those that would close a loop.
         blockerChoices = routines.filter { it.id != id && !wouldCycle(id, it.id, rules) },
         onSave = { draft ->
-            draft.toRoutine(Ids.newId(), LocalDate.now(), Instant.now(), routine)?.let { saved ->
+            draft.toRoutine(Ids.newId(), LocalDate.now(), Instant.now(), routine, from)?.let { saved ->
                 val blockers = draft.blockers.filterTo(HashSet()) { blocker -> routines.any { it.id == blocker } }
                 io { repository.save(saved, blockers) }
             }

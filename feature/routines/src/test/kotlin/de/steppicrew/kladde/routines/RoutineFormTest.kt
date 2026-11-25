@@ -40,14 +40,18 @@ class RoutineFormTest {
     }
 
     @Test
-    fun `an edit keeps id, creation and start unless the schedule changed`() {
+    fun `an edit keeps id and creation, and a new schedule applies from the edited event`() {
         val earlier = RoutineDraft("Sport", Repeat.EVERY_N_DAYS, interval = "2").toRoutine("r1", today.minusDays(10), Instant.EPOCH)!!
+        val event = today.plusDays(2)
 
-        val renamed = RoutineDraft.of(earlier).copy(title = "Workout").toRoutine("new", today, now, earlier)!!
-        val rescheduled = RoutineDraft.of(earlier).copy(interval = "3").toRoutine("new", today, now, earlier)!!
+        val renamed = RoutineDraft.of(earlier).copy(title = "Workout").toRoutine("new", today, now, earlier, event)!!
+        val rescheduled = RoutineDraft.of(earlier).copy(interval = "3").toRoutine("new", today, now, earlier, event)!!
+        val retimed = RoutineDraft.of(earlier).copy(time = LocalTime.of(7, 0)).toRoutine("new", today, now, earlier, event)!!
 
         assertEquals(earlier.copy(title = "Workout"), renamed)
-        assertEquals(earlier.copy(recurrence = Recurrence.EveryNDays(3), startDate = today), rescheduled)
+        assertEquals(earlier.withSchedule(Recurrence.EveryNDays(3), null, event), rescheduled)
+        assertEquals(event, rescheduled.startDate)
+        assertEquals(earlier.withSchedule(earlier.recurrence, LocalTime.of(7, 0), event), retimed)
     }
 
     @Test

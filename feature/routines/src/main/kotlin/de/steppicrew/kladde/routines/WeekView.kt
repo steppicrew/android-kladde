@@ -136,7 +136,7 @@ private fun OccurrenceRow(
         val blocked = occurrence.status == OccurrenceStatus.BLOCKED || occurrence.status == OccurrenceStatus.CANCELLED
         val muted = blocked || occurrence.status == OccurrenceStatus.PAUSED
         Column(Modifier.weight(1f).clickable { onOpen(occurrence) }.padding(vertical = 6.dp)) {
-            val time = routine.time?.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
+            val time = occurrence.time?.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
             Text(
                 listOfNotNull(time, routine.title).joinToString("  "),
                 style = MaterialTheme.typography.bodyLarge,

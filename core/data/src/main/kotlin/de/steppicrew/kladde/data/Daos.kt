@@ -166,3 +166,15 @@ internal interface RoutineExtraDao {
     @Query("DELETE FROM routine_extras WHERE routine_id = :routineId")
     fun removeAllOf(routineId: String)
 }
+
+@Dao
+internal interface ScheduleVersionDao {
+    @Query("SELECT * FROM routine_schedule_versions ORDER BY valid_from")
+    fun observeAll(): Flow<List<ScheduleVersionEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insert(versions: List<ScheduleVersionEntity>)
+
+    @Query("DELETE FROM routine_schedule_versions WHERE routine_id = :routineId")
+    fun deleteAllOf(routineId: String)
+}

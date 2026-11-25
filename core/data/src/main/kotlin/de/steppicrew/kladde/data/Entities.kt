@@ -132,3 +132,12 @@ internal data class RoutineExtraEntity(
     @ColumnInfo(name = "routine_id") val routineId: String,
     val date: String,
 )
+
+/** A schedule a routine had before a change: from valid_from (ISO date) until the next one starts. */
+@Entity(tableName = "routine_schedule_versions", primaryKeys = ["routine_id", "valid_from"])
+internal data class ScheduleVersionEntity(
+    @ColumnInfo(name = "routine_id") val routineId: String,
+    @ColumnInfo(name = "valid_from") val validFrom: String,
+    val rrule: String,
+    val time: String?,
+)

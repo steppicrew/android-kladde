@@ -127,6 +127,18 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun `8 to 9 keeps extras and adds an empty routine_schedule_versions table`() {
+        helper.createDatabase(DB, 8).use { db ->
+            db.execSQL("INSERT INTO routine_extras (routine_id, date) VALUES ('r1', '2026-11-27')")
+        }
+
+        helper.runMigrationsAndValidate(DB, 9, true).use { db ->
+            assertEquals(1, db.count("routine_extras"))
+            assertEquals(0, db.count("routine_schedule_versions"))
+        }
+    }
+
     private fun androidx.sqlite.db.SupportSQLiteDatabase.count(table: String): Int =
         query("SELECT COUNT(*) FROM $table").use { cursor ->
             cursor.moveToFirst()

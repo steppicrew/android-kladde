@@ -126,7 +126,7 @@ class RoutinePlan(
         val extra = extrasOn[date].orEmpty().map { occurrence(it, date, date, today, isExtra = true) }
         return (planned.filterNotNull() + movedHere + extra)
             .sortedWith(
-                compareBy(nullsFirst()) { occurrence: Occurrence -> occurrence.routine.time }.thenBy { it.routine.title.lowercase() },
+                compareBy(nullsFirst()) { occurrence: Occurrence -> occurrence.time }.thenBy { it.routine.title.lowercase() },
             )
     }
 

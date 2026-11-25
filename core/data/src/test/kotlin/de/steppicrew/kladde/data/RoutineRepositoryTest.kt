@@ -56,6 +56,20 @@ class RoutineRepositoryTest {
     }
 
     @Test
+    fun `earlier schedules are stored and read back with the routine`() {
+        val changed =
+            ruedersdorf
+                .withSchedule(Recurrence.Weekly(setOf(DayOfWeek.THURSDAY)), LocalTime.of(19, 0), day.plusWeeks(1))
+                .withSchedule(Recurrence.Daily, null, day.plusWeeks(2))
+        routines.save(changed)
+
+        assertEquals(listOf(changed), all())
+
+        routines.save(changed.withSchedule(Recurrence.Daily, null, day))
+        assertTrue(all().single().earlier.isEmpty())
+    }
+
+    @Test
     fun `saving again replaces the routine`() {
         routines.save(sport)
         routines.save(sport.copy(title = "Workout", recurrence = Recurrence.EveryNDays(2), time = null))

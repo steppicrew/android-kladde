@@ -66,4 +66,5 @@
     <string name="routines_add_extra">Zusätzlich am …</string>
     <string name="routines_remove_extra">Zusatztermin entfernen</string>
     <string name="routines_extra">Zusätzlich</string>
+    <string name="routines_change_from">Änderungen an Wiederholung und Uhrzeit gelten ab %1$s; die Tage davor bleiben, wie sie waren.</string>
 </resources>

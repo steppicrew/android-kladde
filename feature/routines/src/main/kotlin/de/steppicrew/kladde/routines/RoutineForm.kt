@@ -61,26 +61,25 @@ internal data class RoutineDraft(
     val isComplete: Boolean get() = title.isNotBlank() && recurrence != null
 
     /**
-     * The routine this draft makes, in place of [editing] if given. A changed schedule starts
-     * [today], so every N days counts from the day it was set; an unchanged one keeps its start.
+     * The routine this draft makes, in place of [editing] if given. A new one starts [today]. For
+     * an edit, a changed repeat or time applies [from] the event it was made at; the days before
+     * keep their schedule. Name, ticking off and conditions are not schedule and change throughout.
      */
     fun toRoutine(
         id: String,
         today: LocalDate,
         now: Instant,
         editing: Routine? = null,
+        from: LocalDate = today,
     ): Routine? {
         val recurrence = recurrence?.takeIf { title.isNotBlank() } ?: return null
-        val start = editing?.startDate?.takeIf { editing.recurrence == recurrence } ?: today
-        return Routine(
-            id = editing?.id ?: id,
-            title = title.trim(),
-            recurrence = recurrence,
-            startDate = start,
-            time = time,
-            checkable = checkable,
-            createdAt = editing?.createdAt ?: now,
-        )
+        val scheduled =
+            when {
+                editing == null -> Routine(id, title, recurrence, today, time, checkable, now)
+                editing.recurrence == recurrence && editing.time == time -> editing
+                else -> editing.withSchedule(recurrence, time, from)
+            }
+        return scheduled.copy(title = title.trim(), checkable = checkable)
     }
 
     companion object {
