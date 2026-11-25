@@ -46,6 +46,7 @@ kotlin {
 
 dependencies {
     implementation(project(":integration:adx"))
+    implementation(project(":feature:routines"))
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     implementation(platform(libs.compose.bom))

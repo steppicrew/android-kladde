@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="routines_empty">No routines yet. Add one, e.g. \"Sport\" every day at 18:00, or \"Rüdersdorf\" on Wednesdays.</string>
+    <string name="routines_day_free">Nothing planned</string>
+    <string name="routines_add">Add routine</string>
+    <string name="routines_today">Today, %1$s</string>
+    <string name="routines_yesterday">Yesterday, %1$s</string>
+    <string name="routines_tomorrow">Tomorrow, %1$s</string>
+    <string name="routines_done">Done</string>
+    <string name="routines_skip">Skip</string>
+    <string name="routines_undo">Undo</string>
+    <string name="routines_status_done">Done</string>
+    <string name="routines_status_skipped">Skipped</string>
+    <string name="routines_status_missed">Not ticked off</string>
+    <string name="routines_new">New routine</string>
+    <string name="routines_change">Change routine</string>
+    <string name="routines_title">Name</string>
+    <string name="routines_repeat">Repeats</string>
+    <string name="routines_every_day">Every day</string>
+    <string name="routines_weekdays">On certain weekdays</string>
+    <string name="routines_every_n_days">Every few days</string>
+    <string name="routines_interval">Every … days</string>
+    <string name="routines_interval_hint">From 2 to 365, counted from today</string>
+    <string name="routines_time">Time</string>
+    <string name="routines_time_none">No set time</string>
+    <string name="routines_time_clear">Remove time</string>
+    <string name="routines_checkable">Tick off</string>
+    <string name="routines_checkable_hint">Off for things that just happen, like an appointment</string>
+    <string name="routines_save">Save</string>
+    <string name="routines_cancel">Cancel</string>
+    <string name="routines_delete">Delete</string>
+    <string name="routines_ok">OK</string>
+</resources>

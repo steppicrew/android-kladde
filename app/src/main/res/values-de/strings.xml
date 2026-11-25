@@ -3,4 +3,6 @@
     <string name="empty_state">Noch nichts erfasst.</string>
     <string name="locked_state">Kladde ist gesperrt.</string>
     <string name="source_app">über %1$s</string>
+    <string name="tab_entries">Einträge</string>
+    <string name="tab_routines">Routinen</string>
 </resources>

@@ -36,7 +36,8 @@ Early concept / pre-MVP. Items marked **(proposed)** are not final; check with t
 owner before treating them as fixed. Record decisions in `docs/decisions/` (ADR style).
 
 What exists so far: the Gradle skeleton, a minimal `core/model` + `core/data` (trackers and
-data points in plain Room), and the ADX receiver in `integration/adx`. There is **no vault,
+data points in plain Room), the ADX receiver in `integration/adx`, and the first step of
+routines in `feature/routines` (see "Routines & reminders"). There is **no vault,
 no crypto and no sync yet** — `docs/crypto.md` doesn't exist yet; write it before
 `core/crypto`. `VaultLock` is a stub that is unlocked unless locked through the debug
 backdoor. Hilt and SQLCipher are not wired yet (manual wiring in `KladdeApp`). The privacy
@@ -74,7 +75,7 @@ core/data/           Room DB, repositories
 core/sync/           Op-log, merge logic, SyncBackend interface + WebDAV impl
 feature/diary/       Diary UI
 feature/trackers/    Tracker definitions, data entry, quick-add widgets
-feature/routines/    Planned tasks, recurrence, reminders, done/skip, calendar mirror
+feature/routines/    Planned tasks, recurrence, reminders, done/skip, calendar mirror (exists)
 feature/insights/    Graphs, overlays, correlations
 feature/export/      CSV/JSON/PDF export
 integration/adx/     ADX receiver: AdxStore on top of core/data, CONNECT approval screen,
@@ -122,6 +123,31 @@ Rules:
   existing data points.
 - Units are stored explicitly with values; never assume a unit.
 ## Routines & reminders
+
+**Decided with the owner (2026-11-25) — the first version, built in this order, each step
+usable on the phone before the next:**
+
+1. Routines with days and times, and a 7-day view (yesterday, today, the next 6 days) in a
+   "Routinen" tab next to "Einträge". **Built.**
+2. Conditions: "not on days with …" — a routine drops out on days another routine happens
+   (block rules below, `SAME_DAY`, `DROP` only).
+3. Single days: move one occurrence to another date, or cancel it ("Diesmal verschieben auf…",
+   "Diesmal absagen"). Conditions follow the moved/cancelled dates automatically.
+4. Vacations: a pause from–until for **all routines by default**, or only chosen ones.
+5. Then reminders (notifications with Erledigt / Auslassen). **Not in the first version.**
+
+- **One kind of item** for tasks and events: "Sport" and "Rüdersdorf" are both routines;
+  ticking off (`checkable`) is a switch per routine. A non-checkable routine just happens and
+  is never missed. Anything can be a condition for anything.
+- The owner found the ADX label work too complicated: keep routines simple in what the user
+  sees. Out of the first version: linked trackers, calendar mirror, streaks and statistics,
+  `TIME_OVERLAP`/`SHIFT`/offsets/tags in block rules, schedule versions (`validFrom`).
+- Built so far: `Routine` + `Recurrence` (every day / weekdays / every N days, stored as an
+  RRULE subset) and `RoutinePlan` in `core/model`; tables `routines` and
+  `routine_completions` (DB version 4); `RoutinesScreen` and `RoutineEditor` in
+  `feature/routines`. A changed schedule starts the day it is saved.
+
+The full design below is the target; the first version is the subset above.
 
 Example: "Workout every day at 18:00 except Wednesday and Thursday" →
 `RRULE:FREQ=WEEKLY;BYDAY=MO,TU,FR,SA,SU` + local time `18:00` (floating, see below).
@@ -427,7 +453,7 @@ read only in `src/debug` (the `src/release` twin is a no-op). Logs use tag `Klad
 
 ```bash
 adb shell am start -n de.steppicrew.kladde.debug/de.steppicrew.kladde.MainActivity -e cmd lock
-# cmd: lock | unlock | status
+# cmd: lock | unlock | status | tab:entries | tab:routines
 adb logcat -d -s Kladde AdxReceiver
 ```
 

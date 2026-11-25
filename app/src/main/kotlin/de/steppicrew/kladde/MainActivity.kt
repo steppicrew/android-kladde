@@ -19,10 +19,15 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -34,15 +39,25 @@ import de.steppicrew.kladde.adx.LabelsActivity
 import de.steppicrew.kladde.model.DataPoint
 import de.steppicrew.kladde.model.SubTypeLabel
 import de.steppicrew.kladde.model.Tracker
+import de.steppicrew.kladde.routines.RoutinesScreen
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import de.steppicrew.kladde.adx.R as AdxR
 
+/** The main screen's tabs. */
+enum class MainTab {
+    ENTRIES,
+    ROUTINES,
+}
+
 class MainActivity : ComponentActivity() {
+    /** A tab the debug backdoor asked for; the user's own choice is kept otherwise. */
+    private val requestedTab = mutableStateOf<MainTab?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val app = application as KladdeApp
-        DebugCommand.handle(app, intent)
+        requestedTab.value = DebugCommand.handle(app, intent)
         setContent {
             val unlocked by app.vault.state.collectAsStateWithLifecycle()
             MaterialTheme {
@@ -55,9 +70,31 @@ class MainActivity : ComponentActivity() {
                         val points by app.dataPointRepository.observeRecent(RECENT).collectAsStateWithLifecycle(emptyList())
                         val labels by app.subTypeLabelRepository.observeAll().collectAsStateWithLifecycle(emptyList())
                         val open by app.subTypeLabelRepository.observeOpen().collectAsStateWithLifecycle(emptyList())
+                        var tab by rememberSaveable { mutableStateOf(MainTab.ENTRIES) }
+                        requestedTab.value?.let {
+                            tab = it
+                            requestedTab.value = null
+                        }
                         Column {
-                            OpenLabels(open.size) { startActivity(LabelsActivity.intent(this@MainActivity)) }
-                            RecentPoints(trackers, points, labels)
+                            PrimaryTabRow(selectedTabIndex = tab.ordinal) {
+                                Tab(
+                                    tab == MainTab.ENTRIES,
+                                    onClick = { tab = MainTab.ENTRIES },
+                                    text = { Text(stringResource(R.string.tab_entries)) },
+                                )
+                                Tab(
+                                    tab == MainTab.ROUTINES,
+                                    onClick = { tab = MainTab.ROUTINES },
+                                    text = { Text(stringResource(R.string.tab_routines)) },
+                                )
+                            }
+                            when (tab) {
+                                MainTab.ENTRIES -> {
+                                    OpenLabels(open.size) { startActivity(LabelsActivity.intent(this@MainActivity)) }
+                                    RecentPoints(trackers, points, labels)
+                                }
+                                MainTab.ROUTINES -> RoutinesScreen(app.routineRepository)
+                            }
                         }
                     }
                 }
@@ -67,7 +104,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        DebugCommand.handle(application as KladdeApp, intent)
+        DebugCommand.handle(application as KladdeApp, intent)?.let { requestedTab.value = it }
     }
 
     private companion object {

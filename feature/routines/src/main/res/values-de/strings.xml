@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="routines_empty">Noch keine Routinen. Leg eine an, z. B. „Sport“ jeden Tag um 18:00 oder „Rüdersdorf“ mittwochs.</string>
+    <string name="routines_day_free">Nichts geplant</string>
+    <string name="routines_add">Routine anlegen</string>
+    <string name="routines_today">Heute, %1$s</string>
+    <string name="routines_yesterday">Gestern, %1$s</string>
+    <string name="routines_tomorrow">Morgen, %1$s</string>
+    <string name="routines_done">Erledigt</string>
+    <string name="routines_skip">Auslassen</string>
+    <string name="routines_undo">Rückgängig</string>
+    <string name="routines_status_done">Erledigt</string>
+    <string name="routines_status_skipped">Ausgelassen</string>
+    <string name="routines_status_missed">Nicht abgehakt</string>
+    <string name="routines_new">Neue Routine</string>
+    <string name="routines_change">Routine ändern</string>
+    <string name="routines_title">Name</string>
+    <string name="routines_repeat">Wiederholung</string>
+    <string name="routines_every_day">Jeden Tag</string>
+    <string name="routines_weekdays">An bestimmten Wochentagen</string>
+    <string name="routines_every_n_days">Alle paar Tage</string>
+    <string name="routines_interval">Alle … Tage</string>
+    <string name="routines_interval_hint">2 bis 365, ab heute gezählt</string>
+    <string name="routines_time">Uhrzeit</string>
+    <string name="routines_time_none">Keine feste Uhrzeit</string>
+    <string name="routines_time_clear">Uhrzeit entfernen</string>
+    <string name="routines_checkable">Abhaken</string>
+    <string name="routines_checkable_hint">Aus für Dinge, die einfach stattfinden, wie ein Termin</string>
+    <string name="routines_save">Speichern</string>
+    <string name="routines_cancel">Abbrechen</string>
+    <string name="routines_delete">Löschen</string>
+    <string name="routines_ok">OK</string>
+</resources>

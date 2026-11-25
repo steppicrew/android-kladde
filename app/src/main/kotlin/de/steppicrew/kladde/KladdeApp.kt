@@ -7,6 +7,7 @@ import de.steppicrew.kladde.adx.KladdeAdxStore
 import de.steppicrew.kladde.adx.LabelNotifications
 import de.steppicrew.kladde.data.DataPointRepository
 import de.steppicrew.kladde.data.KladdeDatabase
+import de.steppicrew.kladde.data.RoutineRepository
 import de.steppicrew.kladde.data.SubTypeLabelRepository
 import de.steppicrew.kladde.data.TrackerRepository
 
@@ -20,6 +21,7 @@ class KladdeApp :
     override val trackerRepository by lazy { TrackerRepository(database) }
     val dataPointRepository by lazy { DataPointRepository(database) }
     override val subTypeLabelRepository by lazy { SubTypeLabelRepository(database) }
+    val routineRepository by lazy { RoutineRepository(database) }
 
     override fun onCreate() {
         super.onCreate()
