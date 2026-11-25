@@ -28,6 +28,25 @@ internal interface TrackerDao {
 }
 
 @Dao
+internal interface SubTypeLabelDao {
+    /** Returns -1 when the tracker already has a record for the label. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    fun insert(label: SubTypeLabelEntity): Long
+
+    @Query("SELECT * FROM sub_type_labels WHERE id = :id")
+    fun find(id: String): SubTypeLabelEntity?
+
+    @Query("SELECT * FROM sub_type_labels WHERE status = 'OPEN' ORDER BY created_at")
+    fun observeOpen(): Flow<List<SubTypeLabelEntity>>
+
+    @Query("SELECT * FROM sub_type_labels")
+    fun observeAll(): Flow<List<SubTypeLabelEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun save(label: SubTypeLabelEntity)
+}
+
+@Dao
 internal interface DataPointDao {
     @Query("SELECT * FROM data_points WHERE deleted = 0 ORDER BY at DESC LIMIT :limit")
     fun observeRecent(limit: Int): Flow<List<DataPointEntity>>

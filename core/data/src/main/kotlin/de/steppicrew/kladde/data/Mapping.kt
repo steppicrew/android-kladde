@@ -2,9 +2,12 @@ package de.steppicrew.kladde.data
 
 import de.steppicrew.kladde.model.DataPoint
 import de.steppicrew.kladde.model.ExternalSource
+import de.steppicrew.kladde.model.SubTypeLabel
+import de.steppicrew.kladde.model.SubTypeLabelStatus
 import de.steppicrew.kladde.model.Tracker
 import de.steppicrew.kladde.model.TrackerSource
 import de.steppicrew.kladde.model.TrackerType
+import org.json.JSONObject
 import java.time.Instant
 import java.time.ZoneId
 
@@ -72,4 +75,32 @@ internal fun DataPoint.toEntity(deleted: Boolean = false) =
         sourceRev = source?.rev,
         sourceRaw = source?.raw,
         deleted = deleted,
+    )
+
+internal fun SubTypeLabelEntity.toModel(): SubTypeLabel {
+    val json = JSONObject(defaults)
+    return SubTypeLabel(
+        id = id,
+        trackerId = trackerId,
+        key = key,
+        status = SubTypeLabelStatus.valueOf(status),
+        createdAt = Instant.ofEpochMilli(createdAt),
+        displayName = displayName,
+        defaults = json.keys().asSequence().associateWith { json.getDouble(it) },
+        attrKeys = if (attrKeys.isEmpty()) emptyList() else attrKeys.split(SUB_TYPE_SEPARATOR),
+        sourcePackage = sourcePackage,
+    )
+}
+
+internal fun SubTypeLabel.toEntity() =
+    SubTypeLabelEntity(
+        id = id,
+        trackerId = trackerId,
+        key = key,
+        status = status.name,
+        createdAt = createdAt.toEpochMilli(),
+        displayName = displayName,
+        defaults = JSONObject(defaults).toString(),
+        attrKeys = attrKeys.joinToString(SUB_TYPE_SEPARATOR),
+        sourcePackage = sourcePackage,
     )

@@ -53,4 +53,23 @@ internal data class DataPointEntity(
     val deleted: Boolean,
 )
 
+/** What the user made of one sub type of a tracker; see docs/decisions/0002. */
+@Entity(
+    tableName = "sub_type_labels",
+    indices = [Index("tracker_id", "label_key", unique = true), Index("status")],
+)
+internal data class SubTypeLabelEntity(
+    @PrimaryKey val id: String,
+    @ColumnInfo(name = "tracker_id") val trackerId: String,
+    @ColumnInfo(name = "label_key") val key: String,
+    val status: String,
+    @ColumnInfo(name = "created_at") val createdAt: Long,
+    @ColumnInfo(name = "display_name") val displayName: String?,
+    /** Default values as a JSON object of attr key to number. */
+    val defaults: String,
+    /** Attr keys joined by [SUB_TYPE_SEPARATOR]; empty when there are none. */
+    @ColumnInfo(name = "attr_keys") val attrKeys: String,
+    @ColumnInfo(name = "source_package") val sourcePackage: String?,
+)
+
 internal const val SUB_TYPE_SEPARATOR = "\u001F"

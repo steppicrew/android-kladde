@@ -2,6 +2,8 @@ package de.steppicrew.kladde.data
 
 import de.steppicrew.kladde.model.DataPoint
 import de.steppicrew.kladde.model.ExternalSource
+import de.steppicrew.kladde.model.SubTypeLabel
+import de.steppicrew.kladde.model.SubTypeLabelStatus
 import de.steppicrew.kladde.model.Tracker
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -77,5 +79,37 @@ class DataPointRepository(
                 ),
             )
         }
+    }
+}
+
+/** Labels of sub types and what the user made of them; see docs/decisions/0002. */
+class SubTypeLabelRepository(
+    private val db: KladdeDatabase,
+) {
+    fun find(id: String): SubTypeLabel? = db.subTypeLabels().find(id)?.toModel()
+
+    fun observeOpen(): Flow<List<SubTypeLabel>> = db.subTypeLabels().observeOpen().map { list -> list.map { it.toModel() } }
+
+    fun observeAll(): Flow<List<SubTypeLabel>> = db.subTypeLabels().observeAll().map { list -> list.map { it.toModel() } }
+
+    /** Stores [label] unless its tracker already has a record for its key; returns it when it was new. */
+    fun recordIfNew(label: SubTypeLabel): SubTypeLabel? = label.takeIf { db.subTypeLabels().insert(it.toEntity()) != -1L }
+
+    /** Leaves the label as it is; its entries just count. */
+    fun ignore(id: String) = change(id) { it.copy(status = SubTypeLabelStatus.IGNORED) }
+
+    fun specify(
+        id: String,
+        displayName: String?,
+        defaults: Map<String, Double>,
+    ) = change(id) {
+        it.copy(status = SubTypeLabelStatus.SPECIFIED, displayName = displayName?.trim()?.ifEmpty { null }, defaults = defaults)
+    }
+
+    private fun change(
+        id: String,
+        update: (SubTypeLabel) -> SubTypeLabel,
+    ) = db.runInTransaction {
+        db.subTypeLabels().find(id)?.let { db.subTypeLabels().save(update(it.toModel()).toEntity()) }
     }
 }
