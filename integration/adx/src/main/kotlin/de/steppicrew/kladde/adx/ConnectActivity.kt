@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
@@ -20,6 +21,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -40,6 +42,7 @@ import androidx.lifecycle.lifecycleScope
 import de.steppicrew.adx.AdxStreamDecision
 import de.steppicrew.adx.AdxStreamProposal
 import de.steppicrew.adx.receiver.AdxConnectSession
+import de.steppicrew.adx.receiver.AdxReceiver
 import de.steppicrew.adx.receiver.AdxStreamGrant
 import de.steppicrew.kladde.model.Tracker
 import kotlinx.coroutines.Dispatchers
@@ -57,6 +60,18 @@ internal sealed interface StreamChoice {
 
     data object Decline : StreamChoice
 }
+
+/** Why a new tracker's name can't be used. */
+internal enum class NameProblem {
+    EMPTY,
+    TAKEN,
+}
+
+/** The trackers there are, and the names of the apps that sent to them, by package. */
+private data class Known(
+    val trackers: List<Tracker>,
+    val senders: Map<String, String>,
+)
 
 /** The ADX approval screen: per proposed stream, a new tracker, an existing one, or no. */
 class ConnectActivity : ComponentActivity() {
@@ -81,17 +96,23 @@ class ConnectActivity : ComponentActivity() {
                     if (!host.vaultLock.isUnlocked) {
                         Locked(onClose = session::cancel)
                     } else {
-                        var trackers by remember { mutableStateOf<List<Tracker>?>(null) }
+                        var known by remember { mutableStateOf<Known?>(null) }
                         LaunchedEffect(Unit) {
-                            trackers = withContext(Dispatchers.IO) { host.trackerRepository.all() }
+                            known =
+                                withContext(Dispatchers.IO) {
+                                    val senders = AdxReceiver.consents(this@ConnectActivity).all().associate { it.packageName to it.label }
+                                    Known(host.trackerRepository.all(), senders)
+                                }
                         }
-                        trackers?.let { known ->
+                        known?.let { (trackers, senders) ->
                             ConnectScreen(
                                 senderLabel = session.senderLabel,
                                 proposals = session.request.streams,
-                                trackers = known,
-                                initial = initialChoices(session, known),
-                                onAllow = { choices -> withNotificationPermission { approve(host, session, choices) } },
+                                trackers = trackers,
+                                senders = senders,
+                                initial = initialChoices(session, trackers),
+                                initialNames = defaultNames(session.request.streams, session.senderLabel, trackers),
+                                onAllow = { choices, names -> withNotificationPermission { approve(host, session, choices, names) } },
                                 onCancel = session::cancel,
                             )
                         }
@@ -136,6 +157,7 @@ class ConnectActivity : ComponentActivity() {
         host: KladdeAdxHost,
         session: AdxConnectSession,
         choices: Map<String, StreamChoice>,
+        names: Map<String, String>,
     ) {
         lifecycleScope.launch {
             val grants =
@@ -146,7 +168,8 @@ class ConnectActivity : ComponentActivity() {
                                 StreamChoice.Decline -> AdxStreamGrant(proposal, AdxStreamDecision.DECLINED)
                                 is StreamChoice.Existing -> AdxStreamGrant(proposal, AdxStreamDecision.ACCEPTED, choice.trackerId)
                                 StreamChoice.NewTracker -> {
-                                    val tracker = AdxMapping.newTracker(session.caller.packageName, proposal, Instant.now())
+                                    val name = names[proposal.key]?.trim()?.ifEmpty { null } ?: proposal.name
+                                    val tracker = AdxMapping.newTracker(session.caller.packageName, proposal, Instant.now(), name = name)
                                     host.trackerRepository.save(tracker)
                                     AdxStreamGrant(proposal, AdxStreamDecision.ACCEPTED, tracker.id)
                                 }
@@ -164,11 +187,24 @@ internal fun ConnectScreen(
     senderLabel: String,
     proposals: List<AdxStreamProposal>,
     trackers: List<Tracker>,
+    senders: Map<String, String>,
     initial: Map<String, StreamChoice>,
-    onAllow: (Map<String, StreamChoice>) -> Unit,
+    initialNames: Map<String, String>,
+    onAllow: (choices: Map<String, StreamChoice>, names: Map<String, String>) -> Unit,
     onCancel: () -> Unit,
 ) {
     val choices = remember { mutableStateMapOf<String, StreamChoice>().apply { putAll(initial) } }
+    val names = remember { mutableStateMapOf<String, String>().apply { putAll(initialNames) } }
+    // The template, so the names follow a configuration change like the rest of the screen.
+    val ofApp = stringResource(R.string.adx_connect_tracker_of_app)
+    val labels = remember(trackers, senders, ofApp) { trackerLabels(trackers, senders) { name, app -> ofApp.format(name, app) } }
+
+    // A new tracker's name must be free among the trackers there are and the other new ones.
+    fun problem(key: String): NameProblem? {
+        if (choices[key] != StreamChoice.NewTracker) return null
+        val others = proposals.filter { it.key != key && choices[it.key] == StreamChoice.NewTracker }.map { names[it.key].orEmpty() }
+        return nameProblem(names[key].orEmpty(), trackers.map { it.name } + others)
+    }
     Column(Modifier.fillMaxSize()) {
         Column(
             Modifier
@@ -184,14 +220,20 @@ internal fun ConnectScreen(
                 StreamOptions(
                     proposal = proposal,
                     trackers = trackers.filter { AdxMapping.accepts(it, proposal) },
+                    labels = labels,
                     choice = choices[proposal.key] ?: StreamChoice.Decline,
                     onChoice = { choices[proposal.key] = it },
+                    name = names[proposal.key].orEmpty(),
+                    onName = { names[proposal.key] = it },
+                    problem = problem(proposal.key),
                 )
             }
         }
         // Pinned below the list, so a sender with many streams is still one tap to allow.
         Row(Modifier.padding(horizontal = 24.dp, vertical = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(onClick = { onAllow(choices.toMap()) }) { Text(stringResource(R.string.adx_connect_allow)) }
+            Button(onClick = { onAllow(choices.toMap(), names.toMap()) }, enabled = proposals.none { problem(it.key) != null }) {
+                Text(stringResource(R.string.adx_connect_allow))
+            }
             OutlinedButton(onClick = onCancel) { Text(stringResource(R.string.adx_connect_cancel)) }
         }
     }
@@ -201,8 +243,12 @@ internal fun ConnectScreen(
 private fun StreamOptions(
     proposal: AdxStreamProposal,
     trackers: List<Tracker>,
+    labels: Map<String, String>,
     choice: StreamChoice,
     onChoice: (StreamChoice) -> Unit,
+    name: String,
+    onName: (String) -> Unit,
+    problem: NameProblem?,
 ) {
     Column(Modifier.selectableGroup()) {
         Text(
@@ -213,11 +259,29 @@ private fun StreamOptions(
             Text(stringResource(R.string.adx_connect_unsupported), style = MaterialTheme.typography.bodySmall)
             return@Column
         }
-        Option(stringResource(R.string.adx_connect_new_tracker, proposal.name), choice == StreamChoice.NewTracker) {
+        Option(stringResource(R.string.adx_connect_new_tracker, name.ifBlank { proposal.name }), choice == StreamChoice.NewTracker) {
             onChoice(StreamChoice.NewTracker)
         }
+        if (choice == StreamChoice.NewTracker) {
+            OutlinedTextField(
+                value = name,
+                onValueChange = onName,
+                label = { Text(stringResource(R.string.adx_connect_new_tracker_name)) },
+                isError = problem != null,
+                supportingText =
+                    when (problem) {
+                        NameProblem.EMPTY -> ({ Text(stringResource(R.string.adx_connect_name_empty)) })
+                        NameProblem.TAKEN -> ({ Text(stringResource(R.string.adx_connect_name_taken)) })
+                        null -> null
+                    },
+                singleLine = true,
+                // Lined up with the option's text, under its radio button.
+                modifier = Modifier.fillMaxWidth().padding(start = 32.dp),
+            )
+        }
         for (tracker in trackers) {
-            Option(stringResource(R.string.adx_connect_existing_tracker, tracker.name), choice == StreamChoice.Existing(tracker.id)) {
+            val label = labels[tracker.id] ?: tracker.name
+            Option(stringResource(R.string.adx_connect_existing_tracker, label), choice == StreamChoice.Existing(tracker.id)) {
                 onChoice(StreamChoice.Existing(tracker.id))
             }
         }
@@ -264,8 +328,10 @@ private fun ConnectScreenPreview() {
             senderLabel = "Steppi's Beer Counter",
             proposals = drinks,
             trackers = emptyList(),
+            senders = emptyMap(),
             initial = drinks.associate { it.key to StreamChoice.NewTracker },
-            onAllow = {},
+            initialNames = drinks.associate { it.key to it.name },
+            onAllow = { _, _ -> },
             onCancel = {},
         )
     }

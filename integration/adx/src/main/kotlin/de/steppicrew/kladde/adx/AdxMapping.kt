@@ -35,10 +35,11 @@ internal object AdxMapping {
         proposal: AdxStreamProposal,
         now: Instant,
         id: String = Ids.newId(),
+        name: String = proposal.name,
     ): Tracker =
         Tracker(
             id = id,
-            name = proposal.name,
+            name = name,
             type = trackerType(proposal.kind) ?: TrackerType.NUMBER,
             unit = proposal.unit,
             createdAt = now,
