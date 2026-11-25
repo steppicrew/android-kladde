@@ -113,4 +113,12 @@ class RoutineFormTest {
 
         assertEquals(null, RoutineDraft("Call", timeZone = "Europe/Berlin").toRoutine("r1", today, now)!!.timeZone)
     }
+
+    @Test
+    fun `groups are trimmed and kept through the form`() {
+        val routine = RoutineDraft("Mails", groups = setOf(" Arbeit ", " ")).toRoutine("r1", today, now)!!
+
+        assertEquals(setOf("Arbeit"), routine.groups)
+        assertEquals(setOf("Arbeit"), RoutineDraft.of(routine).groups)
+    }
 }

@@ -51,6 +51,8 @@ data class Routine(
      * time belongs to this zone, e.g. a call at 18:00 Europe/Berlin, and is shown converted.
      */
     val timeZone: ZoneId? = null,
+    /** Groups such as "Arbeit" or "Privat", e.g. to pause all work routines at once. */
+    val groups: Set<String> = emptySet(),
 ) {
     private val current get() = ScheduleVersion(startDate, recurrence, time)
 

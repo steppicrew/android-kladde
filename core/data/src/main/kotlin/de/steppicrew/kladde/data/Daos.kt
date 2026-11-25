@@ -178,3 +178,15 @@ internal interface ScheduleVersionDao {
     @Query("DELETE FROM routine_schedule_versions WHERE routine_id = :routineId")
     fun deleteAllOf(routineId: String)
 }
+
+@Dao
+internal interface RoutineGroupDao {
+    @Query("SELECT * FROM routine_groups")
+    fun observeAll(): Flow<List<RoutineGroupEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insert(groups: List<RoutineGroupEntity>)
+
+    @Query("DELETE FROM routine_groups WHERE routine_id = :routineId")
+    fun deleteAllOf(routineId: String)
+}

@@ -5,7 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,7 +16,6 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -153,21 +151,7 @@ private fun PauseEditor(
                 Choice(stringResource(R.string.routines_pause_all), draft.all) { draft = draft.copy(all = true) }
                 Choice(stringResource(R.string.routines_pause_some), !draft.all) { draft = draft.copy(all = false) }
             }
-            if (!draft.all) {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    for (routine in routines) {
-                        val selected = routine.id in draft.routineIds
-                        FilterChip(
-                            selected = selected,
-                            onClick = {
-                                draft =
-                                    draft.copy(routineIds = if (selected) draft.routineIds - routine.id else draft.routineIds + routine.id)
-                            },
-                            label = { Text(routine.title) },
-                        )
-                    }
-                }
-            }
+            if (!draft.all) PausedRoutines(draft, routines) { draft = it }
         }
         SaveBar(draft.isComplete, !isNew, onSave = { onSave(draft) }, onCancel = onCancel, onDelete = onDelete)
     }

@@ -195,6 +195,21 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun `12 to 13 keeps routines, with no groups`() {
+        helper.createDatabase(DB, 12).use { db ->
+            db.execSQL(
+                "INSERT INTO routines (id, title, rrule, start_date, time, checkable, created_at, ignores_pauses) " +
+                    "VALUES ('r1', 'Sport', 'FREQ=DAILY', '2026-11-25', '18:00', 1, 0, 0)",
+            )
+        }
+
+        helper.runMigrationsAndValidate(DB, 13, true).use { db ->
+            assertEquals(1, db.count("routines"))
+            assertEquals(0, db.count("routine_groups"))
+        }
+    }
+
     private fun androidx.sqlite.db.SupportSQLiteDatabase.count(table: String): Int =
         query("SELECT COUNT(*) FROM $table").use { cursor ->
             cursor.moveToFirst()

@@ -70,6 +70,19 @@ class RoutineRepositoryTest {
     }
 
     @Test
+    fun `groups are stored, replaced on save and gone with the routine`() {
+        routines.save(sport.copy(groups = setOf("Arbeit", "Gesundheit")))
+        assertEquals(setOf("Arbeit", "Gesundheit"), all().single().groups)
+
+        routines.save(sport.copy(groups = setOf("Privat")))
+        assertEquals(setOf("Privat"), all().single().groups)
+
+        routines.delete(sport.id)
+        routines.save(sport.copy(id = "other"))
+        assertEquals(emptySet<String>(), all().single().groups)
+    }
+
+    @Test
     fun `a routine's time zone is stored`() {
         routines.save(sport.copy(timeZone = ZoneId.of("Europe/Berlin")))
 

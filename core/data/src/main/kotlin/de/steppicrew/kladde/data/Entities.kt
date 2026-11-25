@@ -148,3 +148,10 @@ internal data class ScheduleVersionEntity(
     val rrule: String,
     val time: String?,
 )
+
+/** A group a routine belongs to, such as "Arbeit". */
+@Entity(tableName = "routine_groups", primaryKeys = ["routine_id", "name"])
+internal data class RoutineGroupEntity(
+    @ColumnInfo(name = "routine_id") val routineId: String,
+    val name: String,
+)

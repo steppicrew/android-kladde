@@ -44,4 +44,29 @@ class PauseDraftTest {
 
         assertEquals(pause, PauseDraft.of(pause).toPause("p1"))
     }
+
+    @Test
+    fun `a group chip picks all its routines, and takes them out again`() {
+        fun routine(
+            id: String,
+            vararg groups: String,
+        ) = de.steppicrew.kladde.model.Routine(
+            id,
+            id,
+            de.steppicrew.kladde.model.Recurrence.Daily,
+            LocalDate.of(2026, 11, 25),
+            null,
+            true,
+            java.time.Instant.EPOCH,
+            groups = groups.toSet(),
+        )
+        val routines = listOf(routine("mail", "Arbeit"), routine("standup", "Arbeit"), routine("sport", "Privat"))
+        val draft = PauseDraft.new(LocalDate.of(2026, 11, 25)).copy(all = false, routineIds = setOf("sport", "mail"))
+
+        val work = draft.toggleGroup("Arbeit", routines)
+        assertEquals(setOf("sport", "mail", "standup"), work.routineIds)
+        assertTrue(work.hasGroup("Arbeit", routines))
+        assertEquals(setOf("sport"), work.toggleGroup("Arbeit", routines).routineIds)
+        assertFalse(draft.hasGroup("Leer", routines))
+    }
 }

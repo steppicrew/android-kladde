@@ -80,4 +80,9 @@
     <string name="routines_zone_search">Suchen, z. B. Berlin</string>
     <string name="routines_zone_time">%1$s %2$s</string>
     <string name="routines_day_shift">%1$s (%2$s Tag)</string>
+    <string name="routines_groups">Gruppen</string>
+    <string name="routines_groups_hint">Z. B. Arbeit oder Privat, um alle Routinen einer Gruppe auf einmal zu pausieren.</string>
+    <string name="routines_group_new">Neue Gruppe</string>
+    <string name="routines_group_add">Hinzufügen</string>
+    <string name="routines_pause_groups">Ganze Gruppe wählen:</string>
 </resources>

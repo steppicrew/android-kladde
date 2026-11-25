@@ -12,7 +12,10 @@ import java.time.LocalTime
 import java.time.ZoneId
 
 /** The routine with its earlier schedules; an earlier one whose rule this version can't read is left out. */
-internal fun RoutineEntity.toModel(versions: List<ScheduleVersionEntity> = emptyList()): Routine? =
+internal fun RoutineEntity.toModel(
+    versions: List<ScheduleVersionEntity> = emptyList(),
+    groups: Set<String> = emptySet(),
+): Routine? =
     Recurrence.fromRrule(rrule)?.let { recurrence ->
         Routine(
             id = id,
@@ -23,6 +26,7 @@ internal fun RoutineEntity.toModel(versions: List<ScheduleVersionEntity> = empty
             checkable = checkable,
             createdAt = Instant.ofEpochMilli(createdAt),
             ignoresPauses = ignoresPauses,
+            groups = groups,
             // A zone this device doesn't know falls back to floating time rather than losing the routine.
             timeZone = timeZone?.let { runCatching { ZoneId.of(it) }.getOrNull() },
             earlier =

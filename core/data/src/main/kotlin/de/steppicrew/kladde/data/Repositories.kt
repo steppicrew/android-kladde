@@ -138,9 +138,10 @@ class RoutineRepository(
 ) {
     /** A routine whose stored rule this version can't read is left out, not dropped. */
     fun observeAll(): Flow<List<Routine>> =
-        combine(db.routines().observeAll(), db.scheduleVersions().observeAll()) { routines, versions ->
+        combine(db.routines().observeAll(), db.scheduleVersions().observeAll(), db.groups().observeAll()) { routines, versions, groups ->
             val byRoutine = versions.groupBy { it.routineId }
-            routines.mapNotNull { it.toModel(byRoutine[it.id].orEmpty()) }
+            val groupsOf = groups.groupBy({ it.routineId }, { it.name })
+            routines.mapNotNull { it.toModel(byRoutine[it.id].orEmpty(), groupsOf[it.id].orEmpty().toSet()) }
         }
 
     fun observeCompletions(
@@ -164,6 +165,8 @@ class RoutineRepository(
         db.scheduleVersions().insert(routine.versionEntities())
         db.blockRules().deleteRulesOf(routine.id)
         db.blockRules().insertRules(blockers.map { BlockRuleEntity(routine.id, it) })
+        db.groups().deleteAllOf(routine.id)
+        db.groups().insert(routine.groups.map { RoutineGroupEntity(routine.id, it) })
     }
 
     fun observeOverrides(): Flow<List<OccurrenceOverride>> =
@@ -219,6 +222,7 @@ class RoutineRepository(
             db.extras().removeAllOf(id)
             db.blockRules().deleteRulesWith(id)
             db.scheduleVersions().deleteAllOf(id)
+            db.groups().deleteAllOf(id)
             db.routines().delete(id)
         }
 

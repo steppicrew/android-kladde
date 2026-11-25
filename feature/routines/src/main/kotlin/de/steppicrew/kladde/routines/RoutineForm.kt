@@ -41,6 +41,8 @@ internal data class RoutineDraft(
     val timeZone: String? = null,
     /** The ids of the routines this one gives way to. */
     val blockers: Set<String> = emptySet(),
+    /** Group names such as "Arbeit" ([Routine.groups]). */
+    val groups: Set<String> = emptySet(),
 ) {
     /** The schedule the form describes, or null while it is incomplete. */
     val recurrence: Recurrence?
@@ -88,6 +90,7 @@ internal data class RoutineDraft(
             title = title.trim(),
             checkable = checkable,
             ignoresPauses = ignoresPauses,
+            groups = groups.map { it.trim() }.filterTo(HashSet()) { it.isNotEmpty() },
             // Without a time there is nothing for a zone to bind.
             timeZone = timeZone?.takeIf { time != null }?.let(ZoneId::of),
         )
@@ -118,6 +121,7 @@ internal data class RoutineDraft(
                 checkable = routine.checkable,
                 ignoresPauses = routine.ignoresPauses,
                 timeZone = routine.timeZone?.id,
+                groups = routine.groups,
                 blockers = rules.filter { it.routineId == routine.id }.mapTo(HashSet()) { it.blockerId },
             )
     }

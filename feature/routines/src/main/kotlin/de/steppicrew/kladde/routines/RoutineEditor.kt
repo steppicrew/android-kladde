@@ -49,6 +49,8 @@ internal fun RoutineEditor(
     /** For an edit: the day a change to repeat or time applies from, unless the user picks another. */
     scheduleFrom: LocalDate,
     blockerChoices: List<Routine>,
+    /** The groups other routines have, to pick from. */
+    groupChoices: List<String>,
     onSave: (RoutineDraft, from: LocalDate) -> Unit,
     onDelete: () -> Unit,
     onCancel: () -> Unit,
@@ -77,6 +79,7 @@ internal fun RoutineEditor(
             if (!isNew) AppliesFrom(LocalDate.parse(from)) { picking = FROM }
             RepeatFields(draft) { draft = it }
             TimeAndTicking(draft, onPickTime = { picking = TIME }, onPickZone = { picking = ZONE }) { draft = it }
+            GroupFields(draft, groupChoices) { draft = it }
             BlockerFields(draft, blockerChoices) { draft = it }
         }
         SaveBar(draft.isComplete, !isNew, onSave = { onSave(draft, LocalDate.parse(from)) }, onCancel = onCancel, onDelete = onDelete)
@@ -126,6 +129,7 @@ private val DraftSaver =
                 it.monthDays.toList(),
                 it.ignoresPauses,
                 it.timeZone,
+                it.groups.toList(),
             )
         },
         restore = { values ->
@@ -142,6 +146,7 @@ private val DraftSaver =
                 monthDays = (values[8] as List<Int>).toSet(),
                 ignoresPauses = values[9] as Boolean,
                 timeZone = values[10] as String?,
+                groups = (values[11] as List<String>).toSet(),
             )
         },
     )
@@ -156,6 +161,7 @@ private fun RoutineEditorPreview() {
             isNew = false,
             scheduleFrom = LocalDate.of(2026, 11, 25),
             blockerChoices = emptyList(),
+            groupChoices = listOf("Arbeit", "Privat"),
             onSave = { _, _ -> },
             onDelete = {},
             onCancel = {},
