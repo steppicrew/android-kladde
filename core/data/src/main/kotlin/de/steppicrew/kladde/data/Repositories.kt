@@ -6,6 +6,7 @@ import de.steppicrew.kladde.model.ExternalSource
 import de.steppicrew.kladde.model.OccurrenceOverride
 import de.steppicrew.kladde.model.Routine
 import de.steppicrew.kladde.model.RoutineCompletion
+import de.steppicrew.kladde.model.RoutinePause
 import de.steppicrew.kladde.model.SubTypeLabel
 import de.steppicrew.kladde.model.SubTypeLabelStatus
 import de.steppicrew.kladde.model.Tracker
@@ -181,9 +182,21 @@ class RoutineRepository(
         originalDate: LocalDate,
     ) = db.overrides().delete(routineId, originalDate.toString())
 
-    /** Deletes the routine, what was ticked off for it, its single-day changes and every rule it is part of. */
+    /**
+     * Deletes the routine, what was ticked off for it, its single-day changes and every rule it is
+     * part of. It leaves the pauses naming it; one that named only it is deleted, as an empty list
+     * would mean all routines.
+     */
     fun delete(id: String) =
         db.runInTransaction {
+            for (pause in db
+                .pauses()
+                .all()
+                .map { it.toModel() }
+                .filter { id in it.routineIds }) {
+                val rest = pause.routineIds - id
+                if (rest.isEmpty()) db.pauses().delete(pause.id) else db.pauses().save(pause.copy(routineIds = rest).toEntity())
+            }
             db.routines().deleteCompletions(id)
             db.overrides().deleteAllOf(id)
             db.blockRules().deleteRulesWith(id)
@@ -198,4 +211,15 @@ class RoutineRepository(
         routineId: String,
         date: LocalDate,
     ) = db.routines().deleteCompletion(routineId, date.toString())
+}
+
+/** Pauses such as vacations; see [RoutineRepository.delete] for what deleting a routine does to them. */
+class RoutinePauseRepository(
+    private val db: KladdeDatabase,
+) {
+    fun observeAll(): Flow<List<RoutinePause>> = db.pauses().observeAll().map { list -> list.map { it.toModel() } }
+
+    fun save(pause: RoutinePause) = db.pauses().save(pause.toEntity())
+
+    fun delete(id: String) = db.pauses().delete(id)
 }

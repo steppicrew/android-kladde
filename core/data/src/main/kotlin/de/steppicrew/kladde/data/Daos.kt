@@ -133,3 +133,18 @@ internal interface OccurrenceOverrideDao {
     @Query("DELETE FROM occurrence_overrides WHERE routine_id = :routineId")
     fun deleteAllOf(routineId: String)
 }
+
+@Dao
+internal interface RoutinePauseDao {
+    @Query("SELECT * FROM routine_pauses ORDER BY from_date")
+    fun observeAll(): Flow<List<RoutinePauseEntity>>
+
+    @Query("SELECT * FROM routine_pauses")
+    fun all(): List<RoutinePauseEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun save(pause: RoutinePauseEntity)
+
+    @Query("DELETE FROM routine_pauses WHERE id = :id")
+    fun delete(id: String)
+}

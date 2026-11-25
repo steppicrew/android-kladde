@@ -93,7 +93,7 @@ class MainActivity : ComponentActivity() {
                                     OpenLabels(open.size) { startActivity(LabelsActivity.intent(this@MainActivity)) }
                                     RecentPoints(trackers, points, labels)
                                 }
-                                MainTab.ROUTINES -> RoutinesScreen(app.routineRepository)
+                                MainTab.ROUTINES -> RoutinesScreen(app.routineRepository, app.routinePauseRepository)
                             }
                         }
                     }

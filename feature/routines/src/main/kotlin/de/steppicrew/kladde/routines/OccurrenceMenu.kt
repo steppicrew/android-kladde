@@ -34,7 +34,7 @@ internal fun OccurrenceMenu(
 ) {
     var pickDate by remember { mutableStateOf(false) }
     if (pickDate) {
-        MoveDialog(
+        DateDialog(
             initial = occurrence.date,
             onPick = {
                 onMove(it)
@@ -68,10 +68,10 @@ internal fun OccurrenceMenu(
     )
 }
 
-/** The date picker works in UTC midnight millis; the dates here are local days. */
+/** Picks a day. The date picker works in UTC midnight millis; the dates here are local days. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MoveDialog(
+internal fun DateDialog(
     initial: LocalDate,
     onPick: (LocalDate) -> Unit,
     onDismiss: () -> Unit,

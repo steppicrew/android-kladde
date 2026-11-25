@@ -4,6 +4,7 @@ import de.steppicrew.kladde.model.CompletionStatus
 import de.steppicrew.kladde.model.Recurrence
 import de.steppicrew.kladde.model.Routine
 import de.steppicrew.kladde.model.RoutineCompletion
+import de.steppicrew.kladde.model.RoutinePause
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -49,4 +50,22 @@ internal fun RoutineCompletion.toEntity() =
         status = status.name,
         recordedAt = recordedAt.toEpochMilli(),
         zone = zone.id,
+    )
+
+internal fun RoutinePauseEntity.toModel() =
+    RoutinePause(
+        id = id,
+        from = LocalDate.parse(fromDate),
+        until = untilDate?.let(LocalDate::parse),
+        routineIds = if (routineIds.isEmpty()) emptySet() else routineIds.split(SUB_TYPE_SEPARATOR).toSet(),
+        note = note,
+    )
+
+internal fun RoutinePause.toEntity() =
+    RoutinePauseEntity(
+        id = id,
+        fromDate = from.toString(),
+        untilDate = until?.toString(),
+        routineIds = routineIds.sorted().joinToString(SUB_TYPE_SEPARATOR),
+        note = note,
     )

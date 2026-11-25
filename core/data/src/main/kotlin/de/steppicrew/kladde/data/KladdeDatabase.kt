@@ -16,16 +16,18 @@ import androidx.room.RoomDatabase
         RoutineCompletionEntity::class,
         BlockRuleEntity::class,
         OccurrenceOverrideEntity::class,
+        RoutinePauseEntity::class,
     ],
-    version = 6,
+    version = 7,
     // Each step only adds: 2 sub_type_labels, 3 columns to it, 4 the routine tables, 5 block_rules,
-    // 6 occurrence_overrides.
+    // 6 occurrence_overrides, 7 routine_pauses.
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
         AutoMigration(from = 2, to = 3),
         AutoMigration(from = 3, to = 4),
         AutoMigration(from = 4, to = 5),
         AutoMigration(from = 5, to = 6),
+        AutoMigration(from = 6, to = 7),
     ],
 )
 abstract class KladdeDatabase : RoomDatabase() {
@@ -40,6 +42,8 @@ abstract class KladdeDatabase : RoomDatabase() {
     internal abstract fun blockRules(): BlockRuleDao
 
     internal abstract fun overrides(): OccurrenceOverrideDao
+
+    internal abstract fun pauses(): RoutinePauseDao
 
     companion object {
         fun open(context: Context): KladdeDatabase = Room.databaseBuilder(context, KladdeDatabase::class.java, "kladde.db").build()

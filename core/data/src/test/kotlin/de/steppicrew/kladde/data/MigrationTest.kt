@@ -101,6 +101,18 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun `6 to 7 keeps single-day changes and adds an empty routine_pauses table`() {
+        helper.createDatabase(DB, 6).use { db ->
+            db.execSQL("INSERT INTO occurrence_overrides (routine_id, original_date, new_date) VALUES ('r1', '2026-11-25', NULL)")
+        }
+
+        helper.runMigrationsAndValidate(DB, 7, true).use { db ->
+            assertEquals(1, db.count("occurrence_overrides"))
+            assertEquals(0, db.count("routine_pauses"))
+        }
+    }
+
     private fun androidx.sqlite.db.SupportSQLiteDatabase.count(table: String): Int =
         query("SELECT COUNT(*) FROM $table").use { cursor ->
             cursor.moveToFirst()

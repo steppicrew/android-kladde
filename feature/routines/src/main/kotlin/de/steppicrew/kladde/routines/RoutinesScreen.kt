@@ -31,6 +31,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import de.steppicrew.kladde.data.RoutinePauseRepository
 import de.steppicrew.kladde.data.RoutineRepository
 import de.steppicrew.kladde.model.BlockRule
 import de.steppicrew.kladde.model.CompletionStatus
@@ -40,6 +41,7 @@ import de.steppicrew.kladde.model.OccurrenceStatus
 import de.steppicrew.kladde.model.Recurrence
 import de.steppicrew.kladde.model.Routine
 import de.steppicrew.kladde.model.RoutineCompletion
+import de.steppicrew.kladde.model.RoutinePause
 import de.steppicrew.kladde.model.RoutinePlan
 import de.steppicrew.kladde.model.wouldCycle
 import kotlinx.coroutines.Dispatchers
@@ -58,7 +60,10 @@ private const val DAYS_AHEAD = 6L
 
 /** The routines tab: the week, and the form to add or change a routine. */
 @Composable
-fun RoutinesScreen(repository: RoutineRepository) {
+fun RoutinesScreen(
+    repository: RoutineRepository,
+    pauseRepository: RoutinePauseRepository,
+) {
     val today by produceState(LocalDate.now()) {
         // Moves on to the next day at midnight while the screen is open.
         while (true) {
@@ -75,6 +80,7 @@ fun RoutinesScreen(repository: RoutineRepository) {
         repository.observeCompletions(from.minusYears(1), to.plusYears(1))
     }.collectAsStateWithLifecycle(emptyList())
     val overrides by repository.observeOverrides().collectAsStateWithLifecycle(emptyList())
+    val pauses by pauseRepository.observeAll().collectAsStateWithLifecycle(emptyList())
     var menuFor by remember { mutableStateOf<Occurrence?>(null) }
     val scope = rememberCoroutineScope()
 
@@ -87,11 +93,26 @@ fun RoutinesScreen(repository: RoutineRepository) {
         EditRoutine(current, routines, rules, repository, ::io) { editing = null }
         return
     }
-    val plan = RoutinePlan(routines, completions, rules, overrides)
+    var showPauses by rememberSaveable { mutableStateOf(false) }
+    if (showPauses) {
+        PausesScreen(
+            pauses,
+            routines,
+            today,
+            onSave = { io { pauseRepository.save(it) } },
+            onDelete = { io { pauseRepository.delete(it) } },
+        ) {
+            showPauses = false
+        }
+        return
+    }
+    val plan = RoutinePlan(routines, completions, rules, overrides, pauses)
     WeekView(
         days = generateSequence(from) { it.plusDays(1) }.takeWhile { !it.isAfter(to) }.map { it to plan.day(it, today) }.toList(),
         today = today,
         hasRoutines = routines.isNotEmpty(),
+        activePause = pauses.firstOrNull { it.isOn(today) },
+        onPauses = { showPauses = true },
         onAnswer = { occurrence, status ->
             io {
                 repository.complete(
@@ -104,15 +125,29 @@ fun RoutinesScreen(repository: RoutineRepository) {
         onAdd = { editing = "" },
     )
     menuFor?.let { occurrence ->
-        OccurrenceMenu(
-            occurrence = occurrence,
-            onMove = { newDate -> io { repository.change(occurrence.routine.id, occurrence.originalDate, newDate) } },
-            onCancel = { io { repository.change(occurrence.routine.id, occurrence.originalDate, null) } },
-            onRestore = { io { repository.restore(occurrence.routine.id, occurrence.originalDate) } },
-            onEdit = { editing = occurrence.routine.id },
-            onDismiss = { menuFor = null },
-        )
+        ChangeOccurrence(occurrence, repository, ::io, onEdit = { editing = occurrence.routine.id }) { menuFor = null }
     }
+}
+
+/** The menu for one occurrence, its changes saved through [io] on the screen's scope. */
+@Composable
+private fun ChangeOccurrence(
+    occurrence: Occurrence,
+    repository: RoutineRepository,
+    io: (() -> Unit) -> Unit,
+    onEdit: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val id = occurrence.routine.id
+    val planned = occurrence.originalDate
+    OccurrenceMenu(
+        occurrence = occurrence,
+        onMove = { newDate -> io { repository.change(id, planned, newDate) } },
+        onCancel = { io { repository.change(id, planned, null) } },
+        onRestore = { io { repository.restore(id, planned) } },
+        onEdit = onEdit,
+        onDismiss = onDismiss,
+    )
 }
 
 private const val MINUTE_MS = 60_000L
@@ -154,6 +189,8 @@ internal fun WeekView(
     days: List<Pair<LocalDate, List<Occurrence>>>,
     today: LocalDate,
     hasRoutines: Boolean,
+    activePause: RoutinePause?,
+    onPauses: () -> Unit,
     onAnswer: (Occurrence, CompletionStatus) -> Unit,
     onReopen: (Occurrence) -> Unit,
     onOpen: (Occurrence) -> Unit,
@@ -164,6 +201,7 @@ internal fun WeekView(
             Text(stringResource(R.string.routines_empty), Modifier.padding(24.dp))
         } else {
             LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+                item(key = "pauses") { PauseBar(activePause, onPauses) }
                 for ((date, occurrences) in days) {
                     item(key = date.toString()) { DayHeader(date, today) }
                     if (occurrences.isEmpty()) {
@@ -175,7 +213,8 @@ internal fun WeekView(
                             )
                         }
                     }
-                    items(occurrences, key = { "$date-${it.routine.id}" }) { occurrence ->
+                    // A routine can be on a day twice when one was moved there: the planned day tells them apart.
+                    items(occurrences, key = { "$date-${it.routine.id}-${it.originalDate}" }) { occurrence ->
                         OccurrenceRow(occurrence, onAnswer, onReopen, onOpen)
                     }
                     item(key = "$date-divider") { HorizontalDivider(Modifier.padding(top = 8.dp)) }
@@ -188,6 +227,22 @@ internal fun WeekView(
             onClick = onAdd,
             modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
         ) { Text(stringResource(R.string.routines_add)) }
+    }
+}
+
+/** The way to the pauses, and which one is on today. */
+@Composable
+private fun PauseBar(
+    active: RoutinePause?,
+    onPauses: () -> Unit,
+) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            active?.let { pauseSummary(it) }.orEmpty(),
+            Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        TextButton(onClick = onPauses) { Text(stringResource(R.string.routines_pauses)) }
     }
 }
 
@@ -223,12 +278,13 @@ private fun OccurrenceRow(
     val routine = occurrence.routine
     Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
         val blocked = occurrence.status == OccurrenceStatus.BLOCKED || occurrence.status == OccurrenceStatus.CANCELLED
+        val muted = blocked || occurrence.status == OccurrenceStatus.PAUSED
         Column(Modifier.weight(1f).clickable { onOpen(occurrence) }.padding(vertical = 6.dp)) {
             val time = routine.time?.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
             Text(
                 listOfNotNull(time, routine.title).joinToString("  "),
                 style = MaterialTheme.typography.bodyLarge,
-                color = if (blocked) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified,
+                color = if (muted) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified,
                 textDecoration = if (blocked) TextDecoration.LineThrough else null,
             )
             statusText(occurrence)?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
@@ -249,6 +305,11 @@ private fun OccurrenceRow(
             }
             OccurrenceStatus.DONE, OccurrenceStatus.SKIPPED ->
                 TextButton(onClick = { onReopen(occurrence) }) { Text(stringResource(R.string.routines_undo)) }
+            // Done on vacation anyway counts; skipping a paused day says nothing new.
+            OccurrenceStatus.PAUSED ->
+                if (routine.checkable) {
+                    TextButton(onClick = { onAnswer(occurrence, CompletionStatus.DONE) }) { Text(stringResource(R.string.routines_done)) }
+                }
             OccurrenceStatus.HAPPENS, OccurrenceStatus.BLOCKED, OccurrenceStatus.CANCELLED -> Unit
         }
     }
@@ -262,6 +323,12 @@ private fun statusText(occurrence: Occurrence): String? =
         OccurrenceStatus.SKIPPED -> stringResource(R.string.routines_status_skipped)
         OccurrenceStatus.MISSED -> stringResource(R.string.routines_status_missed)
         OccurrenceStatus.CANCELLED -> stringResource(R.string.routines_status_cancelled)
+        OccurrenceStatus.PAUSED ->
+            occurrence.pausedBy
+                ?.note
+                ?.takeIf { it.isNotBlank() }
+                ?.let { stringResource(R.string.routines_status_paused_for, it) }
+                ?: stringResource(R.string.routines_status_paused)
         OccurrenceStatus.OPEN, OccurrenceStatus.HAPPENS -> null
     }
 
@@ -281,6 +348,8 @@ private fun WeekViewPreview() {
             days = (-1L..2).map { today.plusDays(it) }.map { it to plan.day(it, today) },
             today = today,
             hasRoutines = true,
+            activePause = null,
+            onPauses = {},
             onAnswer = { _, _ -> },
             onReopen = {},
             onOpen = {},

@@ -115,3 +115,13 @@ internal data class OccurrenceOverrideEntity(
     @ColumnInfo(name = "original_date") val originalDate: String,
     @ColumnInfo(name = "new_date") val newDate: String?,
 )
+
+/** A pause from–until (ISO dates, until null = open); routine_ids joined by [SUB_TYPE_SEPARATOR], empty = all. */
+@Entity(tableName = "routine_pauses")
+internal data class RoutinePauseEntity(
+    @PrimaryKey val id: String,
+    @ColumnInfo(name = "from_date") val fromDate: String,
+    @ColumnInfo(name = "until_date") val untilDate: String?,
+    @ColumnInfo(name = "routine_ids") val routineIds: String,
+    val note: String,
+)

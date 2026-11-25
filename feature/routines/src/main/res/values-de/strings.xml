@@ -40,4 +40,22 @@
     <string name="routines_restore">Wieder wie geplant</string>
     <string name="routines_edit">Routine ändern</string>
     <string name="routines_close">Schließen</string>
+    <string name="routines_pauses">Pausen &amp; Urlaub</string>
+    <string name="routines_pauses_hint">Während einer Pause ist nichts fällig, und pausierte Tage zählen nicht als versäumt. Trotzdem Erledigtes zählt.</string>
+    <string name="routines_pause_add">Pause anlegen</string>
+    <string name="routines_back">Zurück</string>
+    <string name="routines_pause_all">Alle Routinen</string>
+    <string name="routines_pause_some">Nur bestimmte Routinen</string>
+    <string name="routines_pause_range">%1$s – %2$s</string>
+    <string name="routines_pause_open_range">ab %1$s, bis du sie beendest</string>
+    <string name="routines_pause_default_name">Pause</string>
+    <string name="routines_pause_new">Neue Pause</string>
+    <string name="routines_pause_change">Pause ändern</string>
+    <string name="routines_pause_note">Name, z. B. Urlaub</string>
+    <string name="routines_pause_from">Von</string>
+    <string name="routines_pause_until">Bis</string>
+    <string name="routines_pause_open">Bis ich sie beende</string>
+    <string name="routines_pause_until_before_from">„Bis“ liegt vor „Von“</string>
+    <string name="routines_status_paused">Pausiert</string>
+    <string name="routines_status_paused_for">Pausiert: %1$s</string>
 </resources>

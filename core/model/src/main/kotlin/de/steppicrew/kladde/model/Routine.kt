@@ -141,6 +141,9 @@ enum class OccurrenceStatus {
 
     /** Called off for this one day; listed on its planned day so it can be brought back. */
     CANCELLED,
+
+    /** Inside a pause ([Occurrence.pausedBy]): not due, never missed, but can still be ticked off. */
+    PAUSED,
 }
 
 data class Occurrence(
@@ -151,6 +154,8 @@ data class Occurrence(
     val blockedBy: List<Routine> = emptyList(),
     /** The day it was planned for; differs from [date] when it was moved. Answers are keyed by it. */
     val originalDate: LocalDate = date,
+    /** For [OccurrenceStatus.PAUSED]: the pause it falls into. */
+    val pausedBy: RoutinePause? = null,
 ) {
     val isMoved: Boolean get() = originalDate != date
 }

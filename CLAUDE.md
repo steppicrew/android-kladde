@@ -133,7 +133,7 @@ usable on the phone before the next:**
    (block rules below, `SAME_DAY`, `DROP` only). **Built.**
 3. Single days: move one occurrence to another date, or cancel it ("Diesmal verschieben auf…",
    "Diesmal absagen"). Conditions follow the moved/cancelled dates automatically. **Built.**
-4. Vacations: a pause from–until for **all routines by default**, or only chosen ones.
+4. Vacations: a pause from–until for **all routines by default**, or only chosen ones. **Built.**
 5. Then reminders (notifications with Erledigt / Auslassen). **Not in the first version.**
 
 - **One kind of item** for tasks and events: "Sport" and "Rüdersdorf" are both routines;
@@ -143,9 +143,12 @@ usable on the phone before the next:**
   sees. Out of the first version: linked trackers, calendar mirror, streaks and statistics,
   `TIME_OVERLAP`/`SHIFT`/offsets/tags in block rules, schedule versions (`validFrom`).
 - Built so far: `Routine` + `Recurrence` (every day / weekdays / every N days, stored as an
-  RRULE subset) and `RoutinePlan` in `core/model`; tables `routines` and
-  `routine_completions` (DB version 4); `RoutinesScreen` and `RoutineEditor` in
-  `feature/routines`. A changed schedule starts the day it is saved.
+  RRULE subset), `BlockRule`, `OccurrenceOverride`, `RoutinePause` and `RoutinePlan`
+  (which derives every day's status) in `core/model`; tables `routines`,
+  `routine_completions` (DB 4), `block_rules` (5), `occurrence_overrides` (6),
+  `routine_pauses` (7); screens in `feature/routines`. A changed schedule starts the day it
+  is saved. A move changes the date only, not the time. Deleting a routine drops a pause
+  that named only it (an empty list would mean all routines).
 
 The full design below is the target; the first version is the subset above.
 

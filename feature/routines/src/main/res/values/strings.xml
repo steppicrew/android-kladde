@@ -40,4 +40,22 @@
     <string name="routines_restore">Back to its planned day</string>
     <string name="routines_edit">Change the routine</string>
     <string name="routines_close">Close</string>
+    <string name="routines_pauses">Pauses &amp; vacations</string>
+    <string name="routines_pauses_hint">Nothing is due during a pause, and paused days don\'t count as missed. Done anyway still counts.</string>
+    <string name="routines_pause_add">Add pause</string>
+    <string name="routines_back">Back</string>
+    <string name="routines_pause_all">All routines</string>
+    <string name="routines_pause_some">Only certain routines</string>
+    <string name="routines_pause_range">%1$s – %2$s</string>
+    <string name="routines_pause_open_range">from %1$s, until you end it</string>
+    <string name="routines_pause_default_name">Pause</string>
+    <string name="routines_pause_new">New pause</string>
+    <string name="routines_pause_change">Change pause</string>
+    <string name="routines_pause_note">Name, e.g. Vacation</string>
+    <string name="routines_pause_from">From</string>
+    <string name="routines_pause_until">Until</string>
+    <string name="routines_pause_open">Until I end it</string>
+    <string name="routines_pause_until_before_from">Until lies before from</string>
+    <string name="routines_status_paused">Paused</string>
+    <string name="routines_status_paused_for">Paused: %1$s</string>
 </resources>

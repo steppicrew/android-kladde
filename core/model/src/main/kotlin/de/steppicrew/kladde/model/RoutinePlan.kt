@@ -16,6 +16,27 @@ data class OccurrenceOverride(
 }
 
 /**
+ * A pause, e.g. a vacation: from [from] to [until] (local dates, both included; null = until the
+ * user ends it). It covers the routines in [routineIds], or all of them when that is empty.
+ */
+data class RoutinePause(
+    val id: String,
+    val from: LocalDate,
+    val until: LocalDate?,
+    val routineIds: Set<String> = emptySet(),
+    /** What it is, e.g. "Urlaub"; may be blank. */
+    val note: String = "",
+) {
+    /** Whether [date] lies inside the pause. */
+    fun isOn(date: LocalDate): Boolean = !date.isBefore(from) && (until == null || !date.isAfter(until))
+
+    fun covers(
+        routineId: String,
+        date: LocalDate,
+    ): Boolean = isOn(date) && (routineIds.isEmpty() || routineId in routineIds)
+}
+
+/**
  * What is planned on which day, from the routines, what was ticked off, the block rules and the
  * single-day changes. All of it is worked out per day, never stored as dates: only a blocker that
  * takes place that day blocks, so moving or cancelling one carries through by itself.
@@ -25,6 +46,7 @@ class RoutinePlan(
     completions: List<RoutineCompletion>,
     rules: List<BlockRule> = emptyList(),
     overrides: List<OccurrenceOverride> = emptyList(),
+    private val pauses: List<RoutinePause> = emptyList(),
 ) {
     private val completions = completions.associateBy { it.routineId to it.date }
     private val byId = routines.associateBy { it.id }
@@ -46,14 +68,19 @@ class RoutinePlan(
             .mapNotNull(byId::get)
             .filter { it.id !in path && takesPlace(it, date, path + routine.id) }
 
-    /** Whether [routine] happens on [date]: moved there, or planned there, unchanged and not blocked. */
+    private fun pauseOf(
+        routine: Routine,
+        date: LocalDate,
+    ): RoutinePause? = pauses.firstOrNull { it.covers(routine.id, date) }
+
+    /** Whether [routine] happens on [date]: moved there, or planned there, unchanged, not paused and not blocked. */
     private fun takesPlace(
         routine: Routine,
         date: LocalDate,
         path: Set<String>,
     ): Boolean =
         movedTo[date].orEmpty().any { it.routineId == routine.id } ||
-            (isPlannedUnchanged(routine, date) && blockers(routine, date, path).isEmpty())
+            (isPlannedUnchanged(routine, date) && pauseOf(routine, date) == null && blockers(routine, date, path).isEmpty())
 
     private fun isPlannedUnchanged(
         routine: Routine,
@@ -93,13 +120,15 @@ class RoutinePlan(
         originalDate: LocalDate,
         today: LocalDate,
     ): Occurrence {
-        // What the user ticked off stands, even if a blocker was added to that day later; and an
-        // occurrence the user moved onto a day is never hidden by a block rule.
+        // What the user ticked off stands, even if a pause or blocker was added to that day later;
+        // and an occurrence the user moved onto a day is never hidden by a pause or a block rule.
         val answer = completions[routine.id to originalDate]?.status
         val moved = originalDate != date
-        val blockedBy = if (answer == null && !moved) blockers(routine, date) else emptyList()
+        val pause = if (answer == null && !moved) pauseOf(routine, date) else null
+        val blockedBy = if (answer == null && !moved && pause == null) blockers(routine, date) else emptyList()
         val status =
             when {
+                pause != null -> OccurrenceStatus.PAUSED
                 blockedBy.isNotEmpty() -> OccurrenceStatus.BLOCKED
                 !routine.checkable -> OccurrenceStatus.HAPPENS
                 answer == CompletionStatus.DONE -> OccurrenceStatus.DONE
@@ -107,6 +136,6 @@ class RoutinePlan(
                 date.isBefore(today) -> OccurrenceStatus.MISSED
                 else -> OccurrenceStatus.OPEN
             }
-        return Occurrence(routine, date, status, blockedBy, originalDate)
+        return Occurrence(routine, date, status, blockedBy, originalDate, pause)
     }
 }

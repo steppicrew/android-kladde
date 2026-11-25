@@ -7,6 +7,7 @@ import de.steppicrew.kladde.model.OccurrenceOverride
 import de.steppicrew.kladde.model.Recurrence
 import de.steppicrew.kladde.model.Routine
 import de.steppicrew.kladde.model.RoutineCompletion
+import de.steppicrew.kladde.model.RoutinePause
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -27,6 +28,7 @@ import java.time.ZoneId
 class RoutineRepositoryTest {
     private val db = KladdeDatabase.inMemory(ApplicationProvider.getApplicationContext())
     private val routines = RoutineRepository(db)
+    private val pauseRepository = RoutinePauseRepository(db)
     private val day = LocalDate.of(2026, 11, 25)
     private val zone = ZoneId.of("Europe/Berlin")
     private val sport = Routine("r1", "Sport", Recurrence.Daily, day, LocalTime.of(18, 0), true, Instant.EPOCH)
@@ -135,6 +137,37 @@ class RoutineRepositoryTest {
         routines.delete(sport.id)
 
         assertTrue(overrides().isEmpty())
+    }
+
+    private fun pauses() = runBlocking { pauseRepository.observeAll().first() }
+
+    @Test
+    fun `pauses are stored, changed and deleted`() {
+        val vacation = RoutinePause("p1", day, day.plusDays(7), note = "Urlaub")
+        val sportOnly = RoutinePause("p2", day.plusDays(10), null, setOf(sport.id, ruedersdorf.id))
+        pauseRepository.save(sportOnly)
+        pauseRepository.save(vacation)
+        assertEquals(listOf(vacation, sportOnly), pauses())
+
+        pauseRepository.save(vacation.copy(until = day.plusDays(9)))
+        pauseRepository.delete(sportOnly.id)
+        assertEquals(listOf(vacation.copy(until = day.plusDays(9))), pauses())
+    }
+
+    @Test
+    fun `deleting a routine takes it out of pauses, and drops a pause left with none`() {
+        routines.save(sport)
+        routines.save(ruedersdorf)
+        pauseRepository.save(RoutinePause("all", day, null))
+        pauseRepository.save(RoutinePause("both", day, null, setOf(sport.id, ruedersdorf.id)))
+        pauseRepository.save(RoutinePause("sport", day, null, setOf(sport.id)))
+
+        routines.delete(sport.id)
+
+        assertEquals(
+            listOf(RoutinePause("all", day, null), RoutinePause("both", day, null, setOf(ruedersdorf.id))),
+            pauses().sortedBy { it.id },
+        )
     }
 
     @Test
