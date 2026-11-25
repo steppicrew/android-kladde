@@ -53,6 +53,31 @@ workaround for one sender and fails for every other language and every user-made
   database version 2, an automatic migration that only adds the table); notification,
   actions and screen in `integration/adx`, next to the approval screen.
 
+## Direction: the sender describes, Kladde asks only about gaps
+
+Decided the same day, after trying the screen on the phone. Fixed Kladde types (beverage,
+food, exercise, medication, sleep, each with its own properties and presets) were
+considered and dropped: the sending app knows its domain better than any list in Kladde.
+
+| Option | Pros | Cons | Risks | Score |
+|---|---|---|---|---|
+| **The sender describes its subs and attrs (labels, defaults, self-described app keys), the ADX registry fixes shared meanings, Kladde asks only about what is left open** | Most flexible; the beer counter can say "beerSmall = Small beer, 330 ml, 5 %" once; also fixes raw keys as names | Additive ADX spec change, both libraries | A sender that describes little → Kladde's questions catch it | **9/10** |
+| Fixed types in Kladde with their own properties and presets | Kladde controls the questions | Always behind the senders; duplicates what they know | Mismatch with what senders send | 6/10 |
+| Free keys per sender, no shared registry | Most freedom | Nothing comparable across apps | Two apps' alcohol can't be added up | 4/10 |
+
+- Proposed to ADX (spec suggestions, 2026-11-25): `subs` entries as objects with `key`,
+  `label` and default `attrs`; app-private attrs described with `label`, `type` and `unit`;
+  registry keys `intake.sugar_g`, `exercise.type` (Health Connect exercise types),
+  `exercise.distance_km`, `exercise.kcal`, `medication.dose_mg`, `sleep.quality`; an absent
+  attr means unknown; a new attr or sub is announced with a new `CONNECT`. Open: a list of
+  ingredients per food entry, and updating labels without a new approval.
+- In Kladde, once ADX has it: a sender's sub label pre-fills the name and its defaults the
+  values; a sub the sender described fully opens no question. **Precedence:** an entry's
+  own value, then what the user entered in Kladde, then the sender's sub default. The user's
+  name for a label beats the sender's label.
+- The label screen keeps asking for the stream's announced attrs; it gains fields for
+  self-described keys (by their `type`) once senders send them.
+
 ## Consequences
 
 - No ADX spec change. A sender that later sends display labels would only pre-fill the
