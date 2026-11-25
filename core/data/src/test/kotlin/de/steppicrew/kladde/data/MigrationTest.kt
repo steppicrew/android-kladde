@@ -178,6 +178,23 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun `11 to 12 keeps routines with floating time`() {
+        helper.createDatabase(DB, 11).use { db ->
+            db.execSQL(
+                "INSERT INTO routines (id, title, rrule, start_date, time, checkable, created_at, ignores_pauses) " +
+                    "VALUES ('r1', 'Sport', 'FREQ=DAILY', '2026-11-25', '18:00', 1, 0, 0)",
+            )
+        }
+
+        helper.runMigrationsAndValidate(DB, 12, true).use { db ->
+            db.query("SELECT time_zone FROM routines").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(true, cursor.isNull(0))
+            }
+        }
+    }
+
     private fun androidx.sqlite.db.SupportSQLiteDatabase.count(table: String): Int =
         query("SELECT COUNT(*) FROM $table").use { cursor ->
             cursor.moveToFirst()

@@ -46,6 +46,11 @@ data class Routine(
      * names it still pauses it.
      */
     val ignoresPauses: Boolean = false,
+    /**
+     * Null (the default): the time is wall-clock time wherever the device is (floating). Else the
+     * time belongs to this zone, e.g. a call at 18:00 Europe/Berlin, and is shown converted.
+     */
+    val timeZone: ZoneId? = null,
 ) {
     private val current get() = ScheduleVersion(startDate, recurrence, time)
 
@@ -167,4 +172,23 @@ fun wouldCycle(
         if (seen.add(next)) queue.addAll(blockersOf[next].orEmpty())
     }
     return false
+}
+
+/**
+ * An occurrence's time as shown to someone in a zone: the same, or converted for a routine bound
+ * to another zone, [dayShift] days off its own day, with [zone] to show the original next to it.
+ */
+data class ShownTime(
+    val time: LocalTime,
+    val dayShift: Long = 0,
+    /** For a routine bound to another zone: that zone, whose wall-clock [Occurrence.time] is. */
+    val zone: ZoneId? = null,
+)
+
+/** This occurrence's time for someone in [here]; null for a routine without a time. */
+fun Occurrence.shownTime(here: ZoneId): ShownTime? {
+    val time = time ?: return null
+    val zone = routine.timeZone?.takeIf { it != here }
+    val there = zone?.let { date.atTime(time).atZone(it).withZoneSameInstant(here) }
+    return if (there == null) ShownTime(time) else ShownTime(there.toLocalTime(), ChronoUnit.DAYS.between(date, there.toLocalDate()), zone)
 }

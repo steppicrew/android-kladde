@@ -8,6 +8,7 @@ import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
 
 /** How often, as the form offers it. */
 internal enum class Repeat {
@@ -36,6 +37,8 @@ internal data class RoutineDraft(
     val checkable: Boolean = true,
     /** Goes on during pauses for all routines ([Routine.ignoresPauses]). */
     val ignoresPauses: Boolean = false,
+    /** A zone ID when the time is bound to a zone; null for wherever the device is. */
+    val timeZone: String? = null,
     /** The ids of the routines this one gives way to. */
     val blockers: Set<String> = emptySet(),
 ) {
@@ -81,7 +84,13 @@ internal data class RoutineDraft(
                 editing.recurrence == recurrence && editing.time == time -> editing
                 else -> editing.withSchedule(recurrence, time, from)
             }
-        return scheduled.copy(title = title.trim(), checkable = checkable, ignoresPauses = ignoresPauses)
+        return scheduled.copy(
+            title = title.trim(),
+            checkable = checkable,
+            ignoresPauses = ignoresPauses,
+            // Without a time there is nothing for a zone to bind.
+            timeZone = timeZone?.takeIf { time != null }?.let(ZoneId::of),
+        )
     }
 
     companion object {
@@ -108,6 +117,7 @@ internal data class RoutineDraft(
                 time = routine.time,
                 checkable = routine.checkable,
                 ignoresPauses = routine.ignoresPauses,
+                timeZone = routine.timeZone?.id,
                 blockers = rules.filter { it.routineId == routine.id }.mapTo(HashSet()) { it.blockerId },
             )
     }

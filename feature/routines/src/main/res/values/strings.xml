@@ -74,4 +74,10 @@
     <string name="routines_done_at">Done at %1$s</string>
     <string name="routines_done_at_day">Done on %1$s at %2$s</string>
     <string name="routines_done_at_pick">Done earlier, pick the time</string>
+    <string name="routines_zone_bound">Bound to a time zone</string>
+    <string name="routines_zone_bound_hint">E.g. a call at 18:00 Berlin time: shown converted while you travel. Off: the time applies wherever you are.</string>
+    <string name="routines_zone_pick">Time zone</string>
+    <string name="routines_zone_search">Search, e.g. Berlin</string>
+    <string name="routines_zone_time">%1$s %2$s</string>
+    <string name="routines_day_shift">%1$s (%2$s day)</string>
 </resources>

@@ -20,10 +20,11 @@ import androidx.room.RoomDatabase
         RoutineExtraEntity::class,
         ScheduleVersionEntity::class,
     ],
-    version = 11,
+    version = 12,
     // Each step only adds: 2 sub_type_labels, 3 columns to it, 4 the routine tables, 5 block_rules,
     // 6 occurrence_overrides, 7 routine_pauses, 8 routine_extras, 9 routine_schedule_versions,
-    // 10 routines.ignores_pauses, 11 occurrence_overrides.new_time and routine_completions.done_at.
+    // 10 routines.ignores_pauses, 11 occurrence_overrides.new_time and routine_completions.done_at,
+    // 12 routines.time_zone.
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
         AutoMigration(from = 2, to = 3),
@@ -35,6 +36,7 @@ import androidx.room.RoomDatabase
         AutoMigration(from = 8, to = 9),
         AutoMigration(from = 9, to = 10),
         AutoMigration(from = 10, to = 11),
+        AutoMigration(from = 11, to = 12),
     ],
 )
 abstract class KladdeDatabase : RoomDatabase() {

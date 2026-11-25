@@ -104,4 +104,13 @@ class RoutineFormTest {
         val off = RoutineDraft.of(pills).copy(ignoresPauses = false).toRoutine("new", today, now, pills, today.plusDays(3))!!
         assertEquals(pills.copy(ignoresPauses = false), off)
     }
+
+    @Test
+    fun `a zone binds only a routine with a time`() {
+        val call = RoutineDraft("Call", time = LocalTime.of(18, 0), timeZone = "Europe/Berlin").toRoutine("r1", today, now)!!
+        assertEquals(java.time.ZoneId.of("Europe/Berlin"), call.timeZone)
+        assertEquals("Europe/Berlin", RoutineDraft.of(call).timeZone)
+
+        assertEquals(null, RoutineDraft("Call", timeZone = "Europe/Berlin").toRoutine("r1", today, now)!!.timeZone)
+    }
 }

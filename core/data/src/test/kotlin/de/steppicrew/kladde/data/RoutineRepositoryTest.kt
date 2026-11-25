@@ -70,6 +70,13 @@ class RoutineRepositoryTest {
     }
 
     @Test
+    fun `a routine's time zone is stored`() {
+        routines.save(sport.copy(timeZone = ZoneId.of("Europe/Berlin")))
+
+        assertEquals(ZoneId.of("Europe/Berlin"), all().single().timeZone)
+    }
+
+    @Test
     fun `going on during pauses is stored`() {
         routines.save(sport.copy(ignoresPauses = true))
 

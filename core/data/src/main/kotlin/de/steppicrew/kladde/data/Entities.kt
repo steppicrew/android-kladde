@@ -90,6 +90,8 @@ internal data class RoutineEntity(
     val checkable: Boolean,
     @ColumnInfo(name = "created_at") val createdAt: Long,
     @ColumnInfo(name = "ignores_pauses", defaultValue = "0") val ignoresPauses: Boolean,
+    /** A zone ID for a routine bound to a zone; null for floating time. */
+    @ColumnInfo(name = "time_zone") val timeZone: String? = null,
 )
 
 /** Done or skipped for one occurrence; the date is ISO yyyy-MM-dd, so text order is date order. */

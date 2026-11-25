@@ -34,6 +34,8 @@ import de.steppicrew.kladde.model.Recurrence
 import de.steppicrew.kladde.model.Routine
 import de.steppicrew.kladde.model.RoutinePause
 import de.steppicrew.kladde.model.RoutinePlan
+import de.steppicrew.kladde.model.ShownTime
+import de.steppicrew.kladde.model.shownTime
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
@@ -141,27 +143,15 @@ private fun OccurrenceRow(
         val blocked = occurrence.status == OccurrenceStatus.BLOCKED || occurrence.status == OccurrenceStatus.CANCELLED
         val muted = blocked || occurrence.status == OccurrenceStatus.PAUSED
         Column(Modifier.weight(1f).clickable { onOpen(occurrence) }.padding(vertical = 6.dp)) {
-            val time = occurrence.time?.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
+            val shown = occurrence.shownTime(ZoneId.systemDefault())
+            val time = shown?.let { shownTimeText(it) }
             Text(
                 listOfNotNull(time, routine.title).joinToString("  "),
                 style = MaterialTheme.typography.bodyLarge,
                 color = if (muted) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified,
                 textDecoration = if (blocked) TextDecoration.LineThrough else null,
             )
-            statusText(occurrence)?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-            if (occurrence.isExtra) Text(stringResource(R.string.routines_extra), style = MaterialTheme.typography.bodySmall)
-            if (occurrence.isMoved) {
-                Text(
-                    stringResource(
-                        R.string.routines_moved_from,
-                        listOfNotNull(
-                            occurrence.originalDate.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)),
-                            occurrence.plannedTime?.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)),
-                        ).joinToString(", "),
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
+            RowDetails(occurrence, shown)
         }
         for (action in actions) {
             if (action == RowAction.DONE) {
@@ -230,22 +220,26 @@ internal fun rowActions(
     }
 }
 
-/** "Erledigt um 18:42", with the date when it was done on another day than its own. */
+/** The small lines under a row's title: status, the time in its own zone, extra, moved from. */
 @Composable
-private fun doneAtText(
-    at: Instant,
-    day: LocalDate,
-): String {
-    val local = at.atZone(ZoneId.systemDefault())
-    val time = local.toLocalTime().format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
-    return if (local.toLocalDate() == day) {
-        stringResource(R.string.routines_done_at, time)
-    } else {
-        stringResource(
-            R.string.routines_done_at_day,
-            local.toLocalDate().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)),
-            time,
-        )
+private fun RowDetails(
+    occurrence: Occurrence,
+    shown: ShownTime?,
+) {
+    val small = MaterialTheme.typography.bodySmall
+    statusText(occurrence)?.let { Text(it, style = small) }
+    shown?.zone?.let { zone ->
+        val there = occurrence.time?.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)).orEmpty()
+        Text(stringResource(R.string.routines_zone_time, there, zone.id.replace('_', ' ')), style = small)
+    }
+    if (occurrence.isExtra) Text(stringResource(R.string.routines_extra), style = small)
+    if (occurrence.isMoved) {
+        val planned =
+            listOfNotNull(
+                occurrence.originalDate.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)),
+                occurrence.plannedTime?.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)),
+            ).joinToString(", ")
+        Text(stringResource(R.string.routines_moved_from, planned), style = small)
     }
 }
 

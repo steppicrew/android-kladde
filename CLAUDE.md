@@ -150,12 +150,17 @@ RDATE), and schedule changes that apply only from the edited event on (schedule 
   RRULE subset), `BlockRule`, `OccurrenceOverride`, `RoutinePause` and `RoutinePlan`
   (which derives every day's status) in `core/model`; tables `routines`,
   `routine_completions` (DB 4), `block_rules` (5), `occurrence_overrides` (6),
-  `routine_pauses` (7), `routine_extras` (8), `routine_schedule_versions` (9); screens in
-  `feature/routines`. A change to repeat or time applies from the event the form was opened
+  `routine_pauses` (7), `routine_extras` (8), `routine_schedule_versions` (9),
+  `routines.ignores_pauses` (10), `occurrence_overrides.new_time` + `routine_completions.done_at`
+  (11), `routines.time_zone` (12); screens in `feature/routines`. A change to repeat or time applies from the event the form was opened
   at (`Routine.withSchedule`); name, ticking off and conditions change throughout. A move
   changes the date only, not the time. An extra on a day the routine is planned anyway adds
   nothing. Deleting a routine drops a pause that named only it (an empty list would mean
   all routines).
+  A routine can go on during pauses for all routines (`ignoresPauses`; a pause naming it still
+  pauses it). A move of a timed routine can change the time too, or only the time. "Erledigt"
+  records when it was tapped (`doneAt`); holding it picks an earlier time. Time mode: floating
+  (null `timeZone`, default) or bound to a zone, shown converted with "(+1 day)" while travelling.
 
 The full design below is the target; the first version is the subset above.
 

@@ -2,16 +2,20 @@ package de.steppicrew.kladde.routines
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,4 +79,20 @@ internal fun LongPressTextButton(
         color = MaterialTheme.colorScheme.primary,
         style = MaterialTheme.typography.labelLarge,
     )
+}
+
+/** Save, Cancel and, for something that exists already, Delete, below a form. */
+@Composable
+internal fun SaveBar(
+    canSave: Boolean,
+    canDelete: Boolean,
+    onSave: () -> Unit,
+    onCancel: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Row(Modifier.padding(horizontal = 24.dp, vertical = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Button(onClick = onSave, enabled = canSave) { Text(stringResource(R.string.routines_save)) }
+        OutlinedButton(onClick = onCancel) { Text(stringResource(R.string.routines_cancel)) }
+        if (canDelete) TextButton(onClick = onDelete) { Text(stringResource(R.string.routines_delete)) }
+    }
 }

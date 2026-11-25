@@ -23,6 +23,8 @@ internal fun RoutineEntity.toModel(versions: List<ScheduleVersionEntity> = empty
             checkable = checkable,
             createdAt = Instant.ofEpochMilli(createdAt),
             ignoresPauses = ignoresPauses,
+            // A zone this device doesn't know falls back to floating time rather than losing the routine.
+            timeZone = timeZone?.let { runCatching { ZoneId.of(it) }.getOrNull() },
             earlier =
                 versions.mapNotNull { version ->
                     Recurrence.fromRrule(version.rrule)?.let {
@@ -45,6 +47,7 @@ internal fun Routine.toEntity() =
         checkable = checkable,
         createdAt = createdAt.toEpochMilli(),
         ignoresPauses = ignoresPauses,
+        timeZone = timeZone?.id,
     )
 
 internal fun RoutineCompletionEntity.toModel() =

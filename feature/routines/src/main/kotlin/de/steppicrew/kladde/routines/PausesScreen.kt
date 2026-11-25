@@ -24,7 +24,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -170,11 +169,7 @@ private fun PauseEditor(
                 }
             }
         }
-        Row(Modifier.padding(horizontal = 24.dp, vertical = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(onClick = { onSave(draft) }, enabled = draft.isComplete) { Text(stringResource(R.string.routines_save)) }
-            OutlinedButton(onClick = onCancel) { Text(stringResource(R.string.routines_cancel)) }
-            if (!isNew) TextButton(onClick = onDelete) { Text(stringResource(R.string.routines_delete)) }
-        }
+        SaveBar(draft.isComplete, !isNew, onSave = { onSave(draft) }, onCancel = onCancel, onDelete = onDelete)
     }
     picking?.let { which ->
         DateDialog(

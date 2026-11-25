@@ -13,7 +13,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -37,6 +36,7 @@ import de.steppicrew.kladde.model.Routine
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.time.format.TextStyle
@@ -54,9 +54,9 @@ internal fun RoutineEditor(
     onCancel: () -> Unit,
 ) {
     var draft by rememberSaveable(stateSaver = DraftSaver) { mutableStateOf(initial) }
-    var pickTime by rememberSaveable { mutableStateOf(false) }
     var from by rememberSaveable { mutableStateOf(scheduleFrom.toString()) }
-    var pickFrom by rememberSaveable { mutableStateOf(false) }
+    // Which picker is open: "time", "from", "zone", or none.
+    var picking by rememberSaveable { mutableStateOf<String?>(null) }
     BackHandler(onBack = onCancel)
     Column(Modifier.fillMaxSize()) {
         Column(
@@ -74,41 +74,29 @@ internal fun RoutineEditor(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
-            if (!isNew) AppliesFrom(LocalDate.parse(from)) { pickFrom = true }
+            if (!isNew) AppliesFrom(LocalDate.parse(from)) { picking = FROM }
             RepeatFields(draft) { draft = it }
-            TimeAndTicking(draft, onPickTime = { pickTime = true }) { draft = it }
+            TimeAndTicking(draft, onPickTime = { picking = TIME }, onPickZone = { picking = ZONE }) { draft = it }
             BlockerFields(draft, blockerChoices) { draft = it }
         }
-        Row(Modifier.padding(horizontal = 24.dp, vertical = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(
-                onClick = { onSave(draft, LocalDate.parse(from)) },
-                enabled = draft.isComplete,
-            ) { Text(stringResource(R.string.routines_save)) }
-            OutlinedButton(onClick = onCancel) { Text(stringResource(R.string.routines_cancel)) }
-            if (!isNew) TextButton(onClick = onDelete) { Text(stringResource(R.string.routines_delete)) }
-        }
+        SaveBar(draft.isComplete, !isNew, onSave = { onSave(draft, LocalDate.parse(from)) }, onCancel = onCancel, onDelete = onDelete)
     }
-    if (pickFrom) {
-        DateDialog(
-            initial = LocalDate.parse(from),
-            onPick = {
-                from = it.toString()
-                pickFrom = false
-            },
-            onDismiss = { pickFrom = false },
-        )
-    }
-    if (pickTime) {
-        TimeDialog(
-            initial = draft.time ?: LocalTime.of(DEFAULT_HOUR, 0),
-            onPick = {
-                draft = draft.copy(time = it)
-                pickTime = false
-            },
-            onDismiss = { pickTime = false },
-        )
+    val close = { picking = null }
+    when (picking) {
+        ZONE -> ZoneDialog(onPick = { draft = draft.copy(timeZone = it.id).also { close() } }, onDismiss = close)
+        FROM -> DateDialog(LocalDate.parse(from), onPick = { from = it.toString().also { close() } }, onDismiss = close)
+        TIME ->
+            TimeDialog(
+                draft.time ?: LocalTime.of(DEFAULT_HOUR, 0),
+                onPick = { draft = draft.copy(time = it).also { close() } },
+                onDismiss = close,
+            )
     }
 }
+
+private const val TIME = "time"
+private const val FROM = "from"
+private const val ZONE = "zone"
 
 private const val DEFAULT_HOUR = 18
 private const val INTERVAL_DIGITS = 3
@@ -137,6 +125,7 @@ private val DraftSaver =
                 it.nths.toList(),
                 it.monthDays.toList(),
                 it.ignoresPauses,
+                it.timeZone,
             )
         },
         restore = { values ->
@@ -152,6 +141,7 @@ private val DraftSaver =
                 nths = (values[7] as List<Int>).toSet(),
                 monthDays = (values[8] as List<Int>).toSet(),
                 ignoresPauses = values[9] as Boolean,
+                timeZone = values[10] as String?,
             )
         },
     )
@@ -220,6 +210,7 @@ private fun RepeatFields(
 private fun TimeAndTicking(
     draft: RoutineDraft,
     onPickTime: () -> Unit,
+    onPickZone: () -> Unit,
     onChange: (RoutineDraft) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -232,6 +223,13 @@ private fun TimeAndTicking(
             if (time != null) {
                 TextButton(onClick = { onChange(draft.copy(time = null)) }) { Text(stringResource(R.string.routines_time_clear)) }
             }
+        }
+        if (draft.time != null) {
+            val zone = draft.timeZone
+            SwitchRow(R.string.routines_zone_bound, R.string.routines_zone_bound_hint, zone != null) { bound ->
+                onChange(draft.copy(timeZone = if (bound) ZoneId.systemDefault().id else null))
+            }
+            if (zone != null) OutlinedButton(onClick = onPickZone) { Text(zone) }
         }
         SwitchRow(R.string.routines_checkable, R.string.routines_checkable_hint, draft.checkable) { onChange(draft.copy(checkable = it)) }
         SwitchRow(R.string.routines_ignores_pauses, R.string.routines_ignores_pauses_hint, draft.ignoresPauses) {

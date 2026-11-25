@@ -74,4 +74,10 @@
     <string name="routines_done_at">Erledigt um %1$s</string>
     <string name="routines_done_at_day">Erledigt am %1$s um %2$s</string>
     <string name="routines_done_at_pick">Früher erledigt, Uhrzeit wählen</string>
+    <string name="routines_zone_bound">An eine Zeitzone gebunden</string>
+    <string name="routines_zone_bound_hint">Z. B. ein Anruf um 18:00 Berliner Zeit: wird auf Reisen umgerechnet angezeigt. Aus: Die Uhrzeit gilt dort, wo du gerade bist.</string>
+    <string name="routines_zone_pick">Zeitzone</string>
+    <string name="routines_zone_search">Suchen, z. B. Berlin</string>
+    <string name="routines_zone_time">%1$s %2$s</string>
+    <string name="routines_day_shift">%1$s (%2$s Tag)</string>
 </resources>
