@@ -321,6 +321,13 @@ private fun StreamOptions(
             stringResource(R.string.adx_connect_stream, proposal.name, listOfNotNull(proposal.kind, proposal.unit).joinToString(", ")),
             style = MaterialTheme.typography.titleMedium,
         )
+        // The tracker takes the stream's name; its entry types (an app's drinks) are listed here.
+        proposal.subs.takeIf { it.isNotEmpty() }?.let { subs ->
+            Text(
+                stringResource(R.string.adx_connect_stream_subs, subs.joinToString(", ") { it.label ?: it.key }),
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
         if (AdxMapping.trackerType(proposal.kind) == null) {
             Text(stringResource(R.string.adx_connect_unsupported), style = MaterialTheme.typography.bodySmall)
             return@Column

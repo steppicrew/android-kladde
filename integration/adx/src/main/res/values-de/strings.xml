@@ -20,6 +20,7 @@
     <string name="adx_connect_settled_into">%1$s → %2$s</string>
     <string name="adx_connect_settled_declined">%1$s: nicht erlaubt</string>
     <string name="adx_connect_change">Ändern</string>
+    <string name="adx_connect_stream_subs">Darin: %1$s</string>
     <string name="adx_connect_close">Schließen</string>
     <string name="adx_connect_labels_note">Sendet sie eine Eintragsart, die Kladde noch nicht kennt, fragt Kladde dich, was das ist, per Benachrichtigung, wenn du sie erlaubst.</string>
 
