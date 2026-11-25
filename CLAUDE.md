@@ -56,7 +56,7 @@ backdoor. Hilt and SQLCipher are not wired yet (manual wiring in `KladdeApp`).
 | Health data import | Android Health Connect (optional, opt-in) |
 | Charts | (open) Vico or a small custom Compose canvas implementation |
 | Build | Gradle Kotlin DSL, version catalog (`gradle/libs.versions.toml`) |
-| Toolchain | Same as ADX: AGP 8.13, Gradle 8.13, Kotlin 2.2.20, JDK 21, compile/target SDK 37 |
+| Toolchain | Same as ADX: AGP 9.5, Gradle 9.6, JDK 21, compile/target SDK 37. AGP 9 compiles Kotlin itself, so Android modules apply no `kotlin-android` plugin; `kotlin-jvm` (2.2.20) is for `core/model` only |
 | Min SDK | (open) proposed 26 — set to 26 for now |
 | App integration | ADX receiver (`../android-apx`, composite build); see below |
 
@@ -368,7 +368,7 @@ Goal: work on "dumb" storage (plain WebDAV) without a smart server.
 ## Commands
 
 JDK 21 is required for every Gradle call (the system default JDK 25 is rejected by
-Gradle 8.13). `../android-apx` must be checked out next to this repo: `settings.gradle.kts`
+Gradle 9.6). `../android-apx` must be checked out next to this repo: `settings.gradle.kts`
 pulls it in with `includeBuild`, so ADX changes are picked up without publishing.
 
 ```bash

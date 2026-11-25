@@ -24,7 +24,8 @@ version, limits, validation and the rev rule.
 - The planned `api/` and `sdk/` modules are dropped. Senders use `adx-sender`.
 - During development ADX is included as a Gradle **composite build**
   (`includeBuild("../android-apx")`); publishing is an open question on the ADX side.
-- Kladde's toolchain follows ADX: AGP 8.13, Gradle 8.13, Kotlin 2.2.20, JDK 21,
+- Kladde's toolchain follows ADX (at the time of writing AGP 8.13, Gradle 8.13, Kotlin 2.2.20, JDK 21;
+  since then AGP 9.5 and Gradle 9.6),
   compile/target SDK 37, core library desugaring enabled (required by ADX).
 
 ### Locked vault
