@@ -329,6 +329,20 @@ Goal: work on "dumb" storage (plain WebDAV) without a smart server.
   an explicit justification in the PR.
 - Health Connect access is opt-in, per data type, and revocable.
 - Aim for an F-Droid-compatible build flavor (no proprietary dependencies).
+
+Privacy policy (linked from Play): https://steppicrew.github.io/android-kladde/
+- Its only source is `app/src/main/res/values*/privacy.xml` (English default, German).
+  `scripts/privacy-page.py` builds one page per language (`index.html`, `index.de.html`)
+  with a language selector; the English page switches once to the browser's language.
+  `.github/workflows/pages.yml` publishes it on every push to `main` that changes those
+  files. `PRIVACY.md` is generated too: `./scripts/privacy-page.py --markdown PRIVACY.md`.
+- Every sentence is a claim about current behaviour — **change the text in the same commit
+  as the behaviour.** It currently promises: no `INTERNET` permission, no analytics /
+  crash reporting / ads, data only in app-private storage, cloud backup off
+  (`allowBackup="false"`), ADX senders write-only and approved per app + cert. Adding
+  sync, export, a revoke screen or at-rest encryption means updating it.
+- A new language needs a complete `values-<lang>/privacy.xml` and an entry in the
+  script's `LANGUAGES`; the script refuses partial translations.
 ## Coding conventions
 
 - Kotlin official style; ktlint + detekt must pass.

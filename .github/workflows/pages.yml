@@ -1,0 +1,51 @@
+# Publishes the privacy policy to GitHub Pages from the app's privacy strings.
+#
+# Play links to the page, so it must say what main says. It is built here rather than
+# committed: values*/privacy.xml is its only source, and the history of those files shows what
+# the policy said when, next to the code that keeps its promises.
+name: Privacy page
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/src/main/res/values*/privacy.xml'
+      - 'scripts/privacy-page.py'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The whole history, so the page is dated by the last change to its own text.
+          fetch-depth: 0
+      - name: Build
+        run: |
+          updated="$(git log -1 --format=%cs -- 'app/src/main/res/values*/privacy.xml')"
+          python3 scripts/privacy-page.py _site "$updated"
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  # A job of its own: deploying from the build job doesn't see the uploaded artifact yet.
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

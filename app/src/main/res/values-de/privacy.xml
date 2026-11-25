@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- German privacy policy; see values/privacy.xml. -->
+<resources>
+    <string name="privacy_title">Datenschutzerklärung</string>
+    <string name="privacy_summary">Kladde ist ein privates Tagebuch und ein persönlicher Daten-Tracker. Was du darin festhältst, bleibt auf deinem Gerät.</string>
+    <string name="privacy_updated">Stand: %1$s</string>
+    <string name="privacy_language">Sprache</string>
+
+    <string name="privacy_no_network_title">Deine Daten verlassen dein Gerät nicht</string>
+    <string name="privacy_no_network_body">Die App hat keinerlei Internetberechtigung. Das ist nicht nur ein Versprechen: Android selbst verhindert, dass die App eine Netzwerkverbindung aufbaut. Es gibt keinen Server, der deine Daten empfangen könnte, und keinerlei Code für Analyse, Tracking, Absturzberichte oder Werbung.</string>
+
+    <string name="privacy_storage_title">Was gespeichert wird und wo</string>
+    <string name="privacy_storage_body">Deine Tracker und deine Einträge, zu denen auch Gesundheitsdaten wie der Blutdruck gehören können, liegen nur im privaten Speicher der App auf deinem Gerät. Android hält andere Apps davon fern, und die Speicherverschlüsselung deines Geräts schützt sie im Ruhezustand. Die Android-Sicherung in die Cloud ist für die App abgeschaltet, es wird also nichts in eine Online-Sicherung kopiert.</string>
+
+    <string name="privacy_other_apps_title">Daten aus anderen Apps</string>
+    <string name="privacy_other_apps_body">Du kannst anderen Apps auf deinem Gerät erlauben, Einträge in Kladde anzulegen, zum Beispiel einem Getränkezähler. Nichts passiert, bevor du eine App zulässt und auswählst, welche ihrer Daten du annimmst; die Zustimmung ist an das Signaturzertifikat dieser App gebunden. Eine solche App kann nur ihre eigenen Einträge anlegen, ändern und löschen und nie etwas aus Kladde lesen. Dieser Austausch findet nur auf deinem Gerät statt. Kladde merkt sich, welche Apps du zugelassen hast, in welchen Tracker ihre Daten gehen und von welcher App jeder Eintrag stammt.</string>
+
+    <string name="privacy_sharing_title">Keine Weitergabe</string>
+    <string name="privacy_sharing_body">Deine Daten werden an niemanden weitergegeben, auch nicht an den Entwickler. Die App enthält keinen Code von Dritten, der sie erhält.</string>
+
+    <string name="privacy_control_title">Du behältst die Kontrolle</string>
+    <string name="privacy_control_body">Wenn du die App deinstallierst oder ihren Speicher in den Android-Einstellungen löschst, wird alles gelöscht, was sie gespeichert hat.</string>
+
+    <string name="privacy_changes_title">Änderungen</string>
+    <string name="privacy_changes_body">Sollte die App deine Daten jemals anders behandeln, etwa um sie zwischen deinen Geräten zu synchronisieren, steht das zuerst hier, mit neuem Datum.</string>
+
+    <string name="privacy_contact_title">Quellcode und Kontakt</string>
+    <string name="privacy_contact_body">Der Quellcode ist öffentlich, sodass sich jede Aussage auf dieser Seite prüfen lässt. Fragen kannst du per E-Mail an kladde@steppicrew.de schicken.</string>
+</resources>

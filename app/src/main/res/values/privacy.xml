@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The privacy policy. scripts/privacy-page.py builds the public page (GitHub Pages, linked from
+  Play) and PRIVACY.md from these strings, one page per language. Every sentence is a claim
+  about what the app does: change the text in the same commit as the behaviour it describes.
+-->
+<resources>
+    <string name="privacy_title">Privacy policy</string>
+    <string name="privacy_summary">Kladde is a private diary and personal data tracker. What you record in it stays on your device.</string>
+    <string name="privacy_updated">Last updated: %1$s</string>
+    <string name="privacy_language">Language</string>
+
+    <string name="privacy_no_network_title">Your data never leaves your device</string>
+    <string name="privacy_no_network_body">The app has no internet permission at all. This is not just a promise: Android itself prevents the app from making any network connection. There is no server that could receive your data, and no analytics, tracking, crash reporting or advertising code of any kind.</string>
+
+    <string name="privacy_storage_title">What is stored, and where</string>
+    <string name="privacy_storage_body">Your trackers and the entries you record, which can include health data such as blood pressure, are stored only in the app\'s private storage on your device. Android keeps other apps out of it, and your device\'s storage encryption protects it at rest. Android backup to the cloud is turned off for the app, so nothing is copied to an online backup.</string>
+
+    <string name="privacy_other_apps_title">Data from other apps</string>
+    <string name="privacy_other_apps_body">You can let other apps on your device log entries into Kladde, for example a drink counter. Nothing happens until you approve an app and choose which of its data you accept; the approval is tied to that app\'s signing certificate. Such an app can add, change and delete only its own entries and can never read anything from Kladde. This exchange happens on your device only. Kladde remembers which apps you approved, which tracker each of their data goes to, and which app each entry came from.</string>
+
+    <string name="privacy_sharing_title">No sharing</string>
+    <string name="privacy_sharing_body">Your data is never shared with anyone, including the developer. The app contains no third-party code that receives it.</string>
+
+    <string name="privacy_control_title">You stay in control</string>
+    <string name="privacy_control_body">Uninstalling the app, or clearing its storage in Android\'s settings, deletes everything it holds.</string>
+
+    <string name="privacy_changes_title">Changes</string>
+    <string name="privacy_changes_body">If the app ever handles your data differently, for example to sync it between your devices, this page will say so first, with a new date.</string>
+
+    <string name="privacy_contact_title">Source and contact</string>
+    <string name="privacy_contact_body">The source code is public, so every claim on this page can be checked. Questions can be sent by email to kladde@steppicrew.de.</string>
+</resources>
