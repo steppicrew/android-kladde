@@ -30,9 +30,12 @@ data class NthWeekday(
 /**
  * When a routine happens. Stored as an RFC 5545 RRULE ([toRrule]); only the forms the UI offers
  * are read back: every day, chosen weekdays, every N days, chosen weekdays of the month ("1st
- * and 3rd Monday"), chosen days of the month, and a span of days every year.
+ * and 3rd Monday"), chosen days of the month, a span of days every year, and none at all.
  */
 sealed interface Recurrence {
+    /** Not planned: as a routine's schedule, from its start on it has only extra days. Stored as "". */
+    data object None : Recurrence
+
     data object Daily : Recurrence
 
     data class Weekly(
@@ -114,6 +117,7 @@ sealed interface Recurrence {
     /** Whether [date] is in the pattern; [Routine.occursOn] adds the start date and every N days. */
     fun matches(date: LocalDate): Boolean =
         when (this) {
+            None -> false
             Daily, is EveryNDays -> true
             is Weekly -> date.dayOfWeek in days
             is MonthlyByWeekday -> days.any { it.matches(date) }
@@ -123,6 +127,7 @@ sealed interface Recurrence {
 
     fun toRrule(): String =
         when (this) {
+            None -> ""
             Daily -> "FREQ=DAILY"
             is Weekly -> "FREQ=WEEKLY;BYDAY=" + days.sorted().joinToString(",") { RRULE_DAYS.getValue(it) }
             is EveryNDays -> "FREQ=DAILY;INTERVAL=$interval"
@@ -155,7 +160,9 @@ sealed interface Recurrence {
         private val NTH_DAY = Regex("([+-]?\\d)?([A-Z]{2})")
 
         /** The recurrence [rule] stands for, or null for a rule outside the supported forms. */
-        fun fromRrule(rule: String): Recurrence? {
+        fun fromRrule(rule: String): Recurrence? = if (rule.removePrefix("RRULE:").isBlank()) None else parse(rule)
+
+        private fun parse(rule: String): Recurrence? {
             val parts =
                 rule
                     .removePrefix("RRULE:")
@@ -193,9 +200,6 @@ sealed interface Recurrence {
                 "MONTHLY" -> if (interval == 1) monthly(byDay, byMonthDay) else null
                 else -> null
             }
-
-        /** "MMDD" as a day of the year. */
-        private fun monthDay(code: String): MonthDay = MonthDay.of(code.take(2).toInt(), code.drop(2).toInt())
 
         /** A span within one month (BYMONTH + consecutive BYMONTHDAY) or across months ([X_SPAN]). */
         private fun yearly(
@@ -269,3 +273,6 @@ sealed interface Recurrence {
             }
     }
 }
+
+/** "MMDD" as a day of the year. */
+private fun monthDay(code: String): MonthDay = MonthDay.of(code.take(2).toInt(), code.drop(2).toInt())

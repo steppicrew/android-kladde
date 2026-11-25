@@ -28,7 +28,8 @@ class ScheduleVersionTest {
         assertTrue(changed.occursOn(wednesday.plusDays(1)))
         assertEquals(LocalTime.of(19, 0), changed.timeOn(wednesday.plusDays(1)))
         assertFalse(changed.occursOn(start.minusWeeks(1)))
-        assertEquals(start, changed.firstDay)
+        assertEquals(start, changed.startDate)
+        assertEquals(listOf(wednesday), changed.changes.map { it.validFrom })
     }
 
     @Test
@@ -36,7 +37,7 @@ class ScheduleVersionTest {
         val once = ruedersdorf.withSchedule(Recurrence.Weekly(setOf(THURSDAY)), null, wednesday.minusWeeks(2))
         val twice = once.withSchedule(Recurrence.Weekly(setOf(MONDAY)), null, wednesday)
 
-        assertEquals(listOf(start, wednesday.minusWeeks(2)), twice.earlier.map { it.validFrom })
+        assertEquals(listOf(start, wednesday.minusWeeks(2), wednesday), twice.schedules.map { it.validFrom })
         assertTrue(twice.occursOn(wednesday.minusWeeks(3)))
         assertTrue(twice.occursOn(wednesday.minusWeeks(1).plusDays(1)))
         assertTrue(twice.occursOn(wednesday.plusDays(5)))
@@ -48,8 +49,8 @@ class ScheduleVersionTest {
         val later = ruedersdorf.withSchedule(Recurrence.Weekly(setOf(THURSDAY)), null, wednesday)
         val earlierChange = later.withSchedule(Recurrence.Weekly(setOf(MONDAY)), null, wednesday.minusWeeks(2))
 
-        assertEquals(listOf(start), earlierChange.earlier.map { it.validFrom })
-        assertEquals(wednesday.minusWeeks(2), earlierChange.startDate)
+        assertEquals(listOf(wednesday.minusWeeks(2)), earlierChange.changes.map { it.validFrom })
+        assertEquals(start, earlierChange.startDate)
         assertFalse(earlierChange.occursOn(wednesday.plusDays(1)))
     }
 
@@ -57,7 +58,7 @@ class ScheduleVersionTest {
     fun `a change at the first event replaces the schedule entirely`() {
         val changed = ruedersdorf.withSchedule(Recurrence.Daily, null, start)
 
-        assertTrue(changed.earlier.isEmpty())
+        assertTrue(changed.changes.isEmpty())
         assertEquals(start, changed.startDate)
     }
 
@@ -83,5 +84,72 @@ class ScheduleVersionTest {
 
         assertEquals(LocalTime.of(18, 0), plan.day(wednesday.minusWeeks(1), wednesday).single().time)
         assertEquals(LocalTime.of(20, 0), plan.day(wednesday, wednesday).single().time)
+    }
+
+    private val thursdays = Recurrence.Weekly(setOf(THURSDAY))
+    private val mondays = Recurrence.Weekly(setOf(MONDAY))
+
+    @Test
+    fun `editing a change in the middle keeps the later ones`() {
+        val stacked =
+            ruedersdorf.withSchedules(
+                ruedersdorf.schedules +
+                    ScheduleVersion(wednesday.minusWeeks(2), thursdays, null) +
+                    ScheduleVersion(wednesday, mondays, null),
+            )
+        val edited =
+            stacked.withSchedules(
+                stacked.schedules.map {
+                    if (it.recurrence ==
+                        thursdays
+                    ) {
+                        it.copy(time = LocalTime.of(9, 0))
+                    } else {
+                        it
+                    }
+                },
+            )
+
+        assertEquals(LocalTime.of(9, 0), edited.timeOn(wednesday.minusWeeks(1).plusDays(1)))
+        assertTrue(edited.occursOn(wednesday.plusDays(5)))
+    }
+
+    @Test
+    fun `deleting a change lets the one before it run on, deleting the base starts with the next`() {
+        val stacked = ruedersdorf.withSchedules(ruedersdorf.schedules + ScheduleVersion(wednesday, thursdays, null))
+
+        val withoutChange = stacked.withSchedules(stacked.schedules.dropLast(1))
+        assertEquals(ruedersdorf, withoutChange)
+        assertTrue(withoutChange.occursOn(wednesday.plusWeeks(1)))
+
+        val withoutBase = stacked.withSchedules(stacked.schedules.drop(1))
+        assertEquals(wednesday, withoutBase.startDate)
+        assertFalse(withoutBase.occursOn(wednesday.minusWeeks(1)))
+    }
+
+    @Test
+    fun `not planned from a date on, and planned again later`() {
+        val paused =
+            ruedersdorf.withSchedules(
+                ruedersdorf.schedules +
+                    ScheduleVersion(wednesday, Recurrence.None, null) +
+                    ScheduleVersion(wednesday.plusWeeks(2), ruedersdorf.recurrence, LocalTime.of(18, 0)),
+            )
+
+        assertTrue(paused.occursOn(wednesday.minusWeeks(1)))
+        assertFalse(paused.occursOn(wednesday))
+        assertFalse(paused.occursOn(wednesday.plusWeeks(1)))
+        assertTrue(paused.occursOn(wednesday.plusWeeks(2)))
+        assertEquals(Recurrence.None, Recurrence.fromRrule(""))
+        assertEquals("", Recurrence.None.toRrule())
+    }
+
+    @Test
+    fun `a schedule repeating the one before is dropped, two on one day are refused`() {
+        val same = ruedersdorf.withSchedules(ruedersdorf.schedules + ScheduleVersion(wednesday, ruedersdorf.recurrence, ruedersdorf.time))
+        assertEquals(ruedersdorf, same)
+
+        val twice = runCatching { ruedersdorf.withSchedules(ruedersdorf.schedules + ScheduleVersion(start, mondays, null)) }
+        assertTrue(twice.isFailure)
     }
 }

@@ -7,8 +7,8 @@ import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
 /**
- * A schedule a routine had before it was changed: [recurrence] and [time] from [validFrom] until
- * the next version starts. Every N days counts from [validFrom].
+ * One of a routine's schedules: [recurrence] and [time] from [validFrom] until the next one starts.
+ * Every N days counts from [validFrom]; [Recurrence.None] means not planned from then on.
  */
 data class ScheduleVersion(
     val validFrom: LocalDate,
@@ -26,21 +26,21 @@ data class ScheduleVersion(
  * A planned, recurring thing: a task like "Sport" that is ticked off, or an event like
  * "Rüdersdorf" that just happens ([checkable] false). One kind of item for both.
  *
- * [recurrence] and [time] are the schedule from [startDate] on; a change applies from the event it
- * was made at, so the days before keep the schedules in [earlier].
+ * [recurrence] and [time] are its base schedule, from [startDate] on; [changes] replace it from
+ * their own start dates on ([schedules] has them all, in order).
  */
 data class Routine(
     val id: String,
     val title: String,
     val recurrence: Recurrence,
-    /** Where the current schedule starts, and where every N days counts from. */
+    /** Where the routine and its base schedule start, and where every N days counts from. */
     val startDate: LocalDate,
     /** Wall-clock time in whatever zone the device is in (floating); null for no set time. */
     val time: LocalTime?,
     val checkable: Boolean,
     val createdAt: Instant,
-    /** The schedules before [startDate], oldest first; the first one's start is the routine's. */
-    val earlier: List<ScheduleVersion> = emptyList(),
+    /** Later schedules, each from its [ScheduleVersion.validFrom] (after [startDate]) on, oldest first. */
+    val changes: List<ScheduleVersion> = emptyList(),
     /**
      * Goes on during pauses for all routines, e.g. taking a medicine on vacation; a pause that
      * names it still pauses it.
@@ -54,33 +54,47 @@ data class Routine(
     /** Groups such as "Arbeit" or "Privat", e.g. to pause all work routines at once. */
     val groups: Set<String> = emptySet(),
 ) {
-    private val current get() = ScheduleVersion(startDate, recurrence, time)
+    private val base get() = ScheduleVersion(startDate, recurrence, time)
+
+    /** The base schedule and its changes, by start date. */
+    val schedules: List<ScheduleVersion> get() = listOf(base) + changes
 
     /** The schedule in effect on [date], or null before the routine began. */
     private fun versionOn(date: LocalDate): ScheduleVersion? =
-        if (!date.isBefore(startDate)) current else earlier.lastOrNull { !date.isBefore(it.validFrom) }
+        if (date.isBefore(startDate)) null else changes.lastOrNull { !date.isBefore(it.validFrom) } ?: base
 
     /** Whether the schedule in effect on [date] has an occurrence then. */
     fun occursOn(date: LocalDate): Boolean = versionOn(date)?.matches(date) == true
 
     /** The time the occurrence on [date] has under the schedule in effect then. */
-    fun timeOn(date: LocalDate): LocalTime? = (versionOn(date) ?: current).time
-
-    /** The first day the routine can happen. */
-    val firstDay: LocalDate get() = earlier.firstOrNull()?.validFrom ?: startDate
+    fun timeOn(date: LocalDate): LocalTime? = (versionOn(date) ?: base).time
 
     /**
-     * This routine with [recurrence] and [time] from [from] on; the days before keep what they had.
-     * A change before the routine began applies from its first day.
+     * This routine with [schedules] in place of its own: the earliest one is the base, the rest
+     * are changes. One that repeats the schedule before it is dropped, as it changes nothing.
+     */
+    fun withSchedules(schedules: List<ScheduleVersion>): Routine {
+        val sorted = schedules.sortedBy { it.validFrom }
+        require(sorted.isNotEmpty() && sorted.map { it.validFrom }.distinct().size == sorted.size) { "schedules need distinct start dates" }
+        val kept =
+            sorted.filterIndexed { i, version ->
+                i == 0 || version.recurrence != sorted[i - 1].recurrence || version.time != sorted[i - 1].time
+            }
+        val first = kept.first()
+        return copy(recurrence = first.recurrence, time = first.time, startDate = first.validFrom, changes = kept.drop(1))
+    }
+
+    /**
+     * This routine with [recurrence] and [time] from [from] on, in place of the schedules from then
+     * on; the days before keep theirs. A change before the routine began applies from its start.
      */
     fun withSchedule(
         recurrence: Recurrence,
         time: LocalTime?,
         from: LocalDate,
     ): Routine {
-        val start = maxOf(from, firstDay)
-        val kept = (earlier + current).filter { it.validFrom.isBefore(start) }
-        return copy(recurrence = recurrence, time = time, startDate = start, earlier = kept)
+        val start = maxOf(from, startDate)
+        return withSchedules(schedules.filter { it.validFrom.isBefore(start) } + ScheduleVersion(start, recurrence, time))
     }
 }
 

@@ -11,7 +11,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 
-/** The routine with its earlier schedules; an earlier one whose rule this version can't read is left out. */
+/** The routine (its base schedule) with its later changes; a change whose rule this version can't read is left out. */
 internal fun RoutineEntity.toModel(
     versions: List<ScheduleVersionEntity> = emptyList(),
     groups: Set<String> = emptySet(),
@@ -29,17 +29,18 @@ internal fun RoutineEntity.toModel(
             groups = groups,
             // A zone this device doesn't know falls back to floating time rather than losing the routine.
             timeZone = timeZone?.let { runCatching { ZoneId.of(it) }.getOrNull() },
-            earlier =
-                versions.mapNotNull { version ->
-                    Recurrence.fromRrule(version.rrule)?.let {
-                        ScheduleVersion(LocalDate.parse(version.validFrom), it, version.time?.let(LocalTime::parse))
-                    }
-                },
+            changes =
+                versions
+                    .mapNotNull { version ->
+                        Recurrence.fromRrule(version.rrule)?.let {
+                            ScheduleVersion(LocalDate.parse(version.validFrom), it, version.time?.let(LocalTime::parse))
+                        }
+                    }.sortedBy { it.validFrom },
         )
     }
 
 internal fun Routine.versionEntities() =
-    earlier.map { ScheduleVersionEntity(id, it.validFrom.toString(), it.recurrence.toRrule(), it.time?.toString()) }
+    changes.map { ScheduleVersionEntity(id, it.validFrom.toString(), it.recurrence.toRrule(), it.time?.toString()) }
 
 internal fun Routine.toEntity() =
     RoutineEntity(

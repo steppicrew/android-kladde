@@ -115,6 +115,7 @@ private fun Repeat.label(): Int =
         Repeat.MONTHLY_WEEKDAYS -> R.string.routines_monthly_weekdays
         Repeat.MONTHLY_DAYS -> R.string.routines_monthly_days
         Repeat.YEARLY -> R.string.routines_yearly
+        Repeat.NONE -> R.string.routines_not_planned
     }
 
 /** Keeps a draft across rotation and process death as plain values. */
@@ -216,6 +217,7 @@ private fun RepeatFields(
                     singleLine = true,
                 )
             Repeat.YEARLY -> YearlyFields(draft, onChange)
+            Repeat.NONE -> Text(stringResource(R.string.routines_not_planned_hint), style = MaterialTheme.typography.bodySmall)
             Repeat.EVERY_DAY -> Unit
         }
     }

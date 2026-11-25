@@ -89,4 +89,6 @@
     <string name="routines_yearly_until">Bis</string>
     <string name="routines_yearly_pick">Tag wählen</string>
     <string name="routines_yearly_leap_day">Der 29. Februar kann nicht Anfang oder Ende sein, die meisten Jahre haben ihn nicht.</string>
+    <string name="routines_not_planned">Nicht geplant</string>
+    <string name="routines_not_planned_hint">Nur an Tagen, die du extra hinzufügst; als Änderung: ab dann nicht mehr geplant.</string>
 </resources>

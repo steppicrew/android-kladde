@@ -26,6 +26,9 @@ internal enum class Repeat {
 
     /** Every year from–until, e.g. 1–12 December ([RoutineDraft.yearFrom], [RoutineDraft.yearUntil]). */
     YEARLY,
+
+    /** Not planned ([Recurrence.None]): only extra days, or from a schedule change on, none. */
+    NONE,
 }
 
 /** What the routine form holds while it is being filled in. */
@@ -72,6 +75,7 @@ internal data class RoutineDraft(
                         ?.let(Recurrence::MonthlyByWeekday)
                 Repeat.MONTHLY_DAYS -> monthDays.takeIf { it.isNotEmpty() }?.let(Recurrence::MonthlyByDay)
                 Repeat.YEARLY -> yearly()
+                Repeat.NONE -> Recurrence.None
             }
 
     private fun yearly(): Recurrence? {
@@ -100,9 +104,9 @@ internal data class RoutineDraft(
             when {
                 editing == null -> Routine(id, title, recurrence, from, time, checkable, now)
                 // Same schedule: nothing to change, unless the user moved its start earlier.
-                editing.recurrence == recurrence &&
-                    editing.time == time &&
-                    !(fromPicked && from.isBefore(editing.startDate)) -> editing
+                editing.schedules.last().let { current ->
+                    current.recurrence == recurrence && current.time == time && !(fromPicked && from.isBefore(current.validFrom))
+                } -> editing
                 else -> editing.withSchedule(recurrence, time, from)
             }
         return scheduled.copy(
@@ -123,7 +127,7 @@ internal data class RoutineDraft(
             routine: Routine,
             rules: List<BlockRule> = emptyList(),
         ): RoutineDraft =
-            when (val recurrence = routine.recurrence) {
+            when (val recurrence = routine.schedules.last().recurrence) {
                 Recurrence.Daily -> RoutineDraft(routine.title, Repeat.EVERY_DAY)
                 is Recurrence.Weekly -> RoutineDraft(routine.title, Repeat.WEEKDAYS, days = recurrence.days)
                 is Recurrence.EveryNDays -> RoutineDraft(routine.title, Repeat.EVERY_N_DAYS, interval = recurrence.interval.toString())
@@ -135,9 +139,10 @@ internal data class RoutineDraft(
                         nths = recurrence.days.mapTo(HashSet()) { it.n },
                     )
                 is Recurrence.MonthlyByDay -> RoutineDraft(routine.title, Repeat.MONTHLY_DAYS, monthDays = recurrence.days)
+                Recurrence.None -> RoutineDraft(routine.title, Repeat.NONE)
                 is Recurrence.Yearly -> RoutineDraft(routine.title, Repeat.YEARLY, yearFrom = recurrence.from, yearUntil = recurrence.until)
             }.copy(
-                time = routine.time,
+                time = routine.schedules.last().time,
                 checkable = routine.checkable,
                 ignoresPauses = routine.ignoresPauses,
                 timeZone = routine.timeZone?.id,

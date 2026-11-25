@@ -50,7 +50,7 @@ class RoutineTest {
             "FREQ=WEEKLY;BYDAY=XX",
             "FREQ=DAILY;COUNT=3",
             "FREQ=DAILY;INTERVAL=0",
-            "",
+            // "" is not here: it is Recurrence.None.
             "FREQ=WEEKLY;INTERVAL=2;BYDAY=MO",
         )) {
             assertNull(rule, Recurrence.fromRrule(rule))

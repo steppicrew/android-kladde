@@ -226,6 +226,51 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun `14 to 15 turns the schedules around, the base in the row and changes after it`() {
+        helper.createDatabase(DB, 14).use { db ->
+            val insert = "INSERT INTO routines (id, title, rrule, start_date, time, checkable, created_at, ignores_pauses) VALUES "
+            db.execSQL(insert + "('e', 'Eileen', 'FREQ=WEEKLY;BYDAY=WE,TH', '2026-11-26', NULL, 0, 0, 0)")
+            db.execSQL(insert + "('s', 'Sport', 'FREQ=DAILY', '2026-11-20', '07:00', 1, 0, 0)")
+            db.execSQL(insert + "('r', 'Rüdersdorf', 'FREQ=WEEKLY;BYDAY=WE', '2026-11-01', NULL, 0, 0, 0)")
+            val version = "INSERT INTO routine_schedule_versions (routine_id, valid_from, rrule, time) VALUES "
+            db.execSQL(version + "('e', '2026-11-25', 'FREQ=WEEKLY;BYDAY=TH', NULL)")
+            db.execSQL(version + "('s', '2026-11-01', 'FREQ=DAILY', '06:00'), ('s', '2026-11-10', 'FREQ=WEEKLY;BYDAY=MO', '06:30')")
+        }
+
+        helper.runMigrationsAndValidate(DB, 15, true, MIGRATION_14_15).use { db ->
+            assertEquals(
+                listOf(
+                    "e|2026-11-25|FREQ=WEEKLY;BYDAY=TH|null",
+                    "r|2026-11-01|FREQ=WEEKLY;BYDAY=WE|null",
+                    "s|2026-11-01|FREQ=DAILY|06:00",
+                ),
+                db.rows("SELECT id, start_date, rrule, time FROM routines ORDER BY id"),
+            )
+            assertEquals(
+                listOf(
+                    "e|2026-11-26|FREQ=WEEKLY;BYDAY=WE,TH|null",
+                    "s|2026-11-10|FREQ=WEEKLY;BYDAY=MO|06:30",
+                    "s|2026-11-20|FREQ=DAILY|07:00",
+                ),
+                db.rows("SELECT routine_id, valid_from, rrule, time FROM routine_schedule_versions ORDER BY routine_id, valid_from"),
+            )
+        }
+    }
+
+    private fun androidx.sqlite.db.SupportSQLiteDatabase.rows(sql: String): List<String> =
+        query(sql).use { cursor ->
+            generateSequence {
+                if (cursor.moveToNext()) {
+                    (0 until cursor.columnCount).joinToString(
+                        "|",
+                    ) { cursor.getString(it) ?: "null" }
+                } else {
+                    null
+                }
+            }.toList()
+        }
+
     private fun androidx.sqlite.db.SupportSQLiteDatabase.count(table: String): Int =
         query("SELECT COUNT(*) FROM $table").use { cursor ->
             cursor.moveToFirst()

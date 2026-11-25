@@ -56,7 +56,7 @@ class RoutineRepositoryTest {
     }
 
     @Test
-    fun `earlier schedules are stored and read back with the routine`() {
+    fun `schedule changes are stored and read back with the routine, also "not planned"`() {
         val changed =
             ruedersdorf
                 .withSchedule(Recurrence.Weekly(setOf(DayOfWeek.THURSDAY)), LocalTime.of(19, 0), day.plusWeeks(1))
@@ -65,8 +65,17 @@ class RoutineRepositoryTest {
 
         assertEquals(listOf(changed), all())
 
+        val stopped =
+            changed.withSchedules(
+                changed.schedules +
+                    de.steppicrew.kladde.model
+                        .ScheduleVersion(day.plusWeeks(3), Recurrence.None, null),
+            )
+        routines.save(stopped)
+        assertEquals(listOf(stopped), all())
+
         routines.save(changed.withSchedule(Recurrence.Daily, null, day))
-        assertTrue(all().single().earlier.isEmpty())
+        assertTrue(all().single().changes.isEmpty())
     }
 
     @Test

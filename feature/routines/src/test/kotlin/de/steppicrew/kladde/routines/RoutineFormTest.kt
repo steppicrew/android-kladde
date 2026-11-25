@@ -50,7 +50,7 @@ class RoutineFormTest {
 
         assertEquals(earlier.copy(title = "Workout"), renamed)
         assertEquals(earlier.withSchedule(Recurrence.EveryNDays(3), null, event), rescheduled)
-        assertEquals(event, rescheduled.startDate)
+        assertEquals(event, rescheduled.schedules.last().validFrom)
         assertEquals(earlier.withSchedule(earlier.recurrence, LocalTime.of(7, 0), event), retimed)
     }
 
@@ -129,11 +129,11 @@ class RoutineFormTest {
             RoutineDraft("Eileen", Repeat.WEEKDAYS, days = setOf(java.time.DayOfWeek.THURSDAY)).toRoutine("e", today, now)!!
         val both = setOf(java.time.DayOfWeek.WEDNESDAY, java.time.DayOfWeek.THURSDAY)
         val changed = RoutineDraft.of(thursdays).copy(days = both).toRoutine("x", today.plusDays(1), now, thursdays)!!
-        assertEquals(today.plusDays(1), changed.startDate)
+        assertEquals(today.plusDays(1), changed.schedules.last().validFrom)
 
         val moved = RoutineDraft.of(changed).toRoutine("x", today.minusDays(2), now, changed, fromPicked = true)!!
         assertEquals(today, moved.startDate)
-        assertEquals(emptyList<de.steppicrew.kladde.model.ScheduleVersion>(), moved.earlier)
+        assertEquals(emptyList<de.steppicrew.kladde.model.ScheduleVersion>(), moved.changes)
         assertTrue(moved.occursOn(today))
 
         // Opened at an earlier event but not picked: a rename leaves the schedule alone.
