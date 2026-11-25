@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="empty_state">Noch nichts erfasst.</string>
+    <string name="locked_state">Kladde ist gesperrt.</string>
+    <string name="source_app">über %1$s</string>
 </resources>

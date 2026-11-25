@@ -1,0 +1,134 @@
+package de.steppicrew.kladde.adx
+
+import androidx.test.core.app.ApplicationProvider
+import de.steppicrew.adx.AdxOp
+import de.steppicrew.adx.AdxStreamDecision
+import de.steppicrew.adx.AdxStreamProposal
+import de.steppicrew.adx.receiver.AdxBusyException
+import de.steppicrew.adx.receiver.AdxConsent
+import de.steppicrew.adx.receiver.AdxConsentState
+import de.steppicrew.adx.receiver.AdxStreamGrant
+import de.steppicrew.kladde.data.DataPointRepository
+import de.steppicrew.kladde.data.KladdeDatabase
+import de.steppicrew.kladde.data.TrackerRepository
+import de.steppicrew.kladde.model.TrackerType
+import de.steppicrew.kladde.model.VaultLock
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import java.time.Instant
+import java.time.ZoneId
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
+class KladdeAdxStoreTest {
+    private val db = KladdeDatabase.inMemory(ApplicationProvider.getApplicationContext())
+    private val trackers = TrackerRepository(db)
+    private val points = DataPointRepository(db)
+    private val vault =
+        object : VaultLock {
+            override var isUnlocked = true
+        }
+    private val store = KladdeAdxStore(vault, trackers, points) { Instant.EPOCH }
+
+    private val proposal = AdxStreamProposal("drinks.beer", "Beer", "counter", "count", listOf("Pils"))
+    private val sender = AdxConsent("beer.app", "cert", "Beer Counter", AdxConsentState.APPROVED, emptyMap())
+    private val grant = AdxStreamGrant(proposal, AdxStreamDecision.ACCEPTED, "tracker-1")
+
+    @After
+    fun close() = db.close()
+
+    private fun beer(
+        rev: Long,
+        sub: String = "Pils",
+    ) = AdxOp
+        .upsert("drinks.beer", "e1", rev, Instant.parse("2026-11-25T18:00:00Z"), ZoneId.of("Europe/Berlin"))
+        .value(1L)
+        .sub(sub)
+        .attr("intake.volume_ml", 500L)
+        .build()
+
+    private fun recent() = runBlocking { points.observeRecent(10).first() }
+
+    @Test
+    fun `an upsert lands on the mapped tracker with unit and source`() {
+        store.upsert(sender, grant, beer(1))
+
+        val point = recent().single()
+        assertEquals("tracker-1", point.trackerId)
+        assertEquals(1.0, point.value)
+        assertEquals("count", point.unit)
+        assertEquals("Pils", point.subType)
+        assertEquals(1L, point.source?.rev)
+        assertTrue(
+            point.source
+                ?.raw
+                .orEmpty()
+                .contains("intake.volume_ml"),
+        )
+        assertEquals(1L, store.currentRev(sender, grant, "e1"))
+    }
+
+    @Test
+    fun `a missing target tracker is recreated from the proposal under its id`() {
+        store.upsert(sender, grant, beer(1))
+
+        val tracker = trackers.find("tracker-1")!!
+        assertEquals(TrackerType.COUNTER, tracker.type)
+        assertEquals("Beer", tracker.name)
+    }
+
+    @Test
+    fun `a grant without target makes one tracker, not one per entry`() {
+        val untargeted = grant.copy(target = null)
+        store.upsert(sender, untargeted, beer(1))
+        store.upsert(sender, untargeted, beer(2))
+
+        assertEquals(1, trackers.all().size)
+    }
+
+    @Test
+    fun `a new sub type is added to the tracker`() {
+        store.upsert(sender, grant, beer(1, sub = "Weizen"))
+
+        assertEquals(listOf("Pils", "Weizen"), trackers.find("tracker-1")!!.subTypes)
+    }
+
+    @Test
+    fun `a delete hides the entry and keeps its rev`() {
+        store.upsert(sender, grant, beer(1))
+        store.delete(sender, grant, AdxOp.delete("drinks.beer", "e1", 2))
+
+        assertTrue(recent().isEmpty())
+        assertEquals(2L, store.currentRev(sender, grant, "e1"))
+    }
+
+    @Test
+    fun `a locked vault answers busy and stores nothing`() {
+        vault.isUnlocked = false
+
+        assertBusy { store.currentRev(sender, grant, "e1") }
+        assertBusy { store.upsert(sender, grant, beer(1)) }
+        assertBusy { store.delete(sender, grant, AdxOp.delete("drinks.beer", "e1", 2)) }
+
+        vault.isUnlocked = true
+        assertNull(store.currentRev(sender, grant, "e1"))
+        assertTrue(trackers.all().isEmpty())
+    }
+
+    private fun assertBusy(call: () -> Unit) {
+        try {
+            call()
+        } catch (expected: AdxBusyException) {
+            return
+        }
+        throw AssertionError("expected AdxBusyException")
+    }
+}

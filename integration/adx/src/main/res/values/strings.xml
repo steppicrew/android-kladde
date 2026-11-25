@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="adx_connect_title">%1$s wants to log to Kladde</string>
+    <string name="adx_connect_explainer">It can add, change and delete only its own entries. It can\'t read anything in Kladde. You can revoke this at any time.</string>
+    <string name="adx_connect_stream">%1$s (%2$s)</string>
+    <string name="adx_connect_new_tracker">New tracker \"%1$s\"</string>
+    <string name="adx_connect_existing_tracker">Add to \"%1$s\"</string>
+    <string name="adx_connect_decline">Don\'t allow</string>
+    <string name="adx_connect_unsupported">Kladde can\'t store this kind of data yet.</string>
+    <string name="adx_connect_allow">Allow</string>
+    <string name="adx_connect_cancel">Cancel</string>
+    <string name="adx_connect_locked">Unlock Kladde first, then try again.</string>
+    <string name="adx_connect_close">Close</string>
+</resources>

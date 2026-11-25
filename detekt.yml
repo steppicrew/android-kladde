@@ -9,3 +9,6 @@ style:
     ignoreAnnotated: ['Preview']
   MaxLineLength:
     maxLineLength: 140
+complexity:
+  LongParameterList:
+    ignoreAnnotated: ['Composable']

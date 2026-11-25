@@ -2,4 +2,6 @@
 <resources>
     <string name="app_name">Kladde</string>
     <string name="empty_state">Nothing logged yet.</string>
+    <string name="locked_state">Kladde is locked.</string>
+    <string name="source_app">via %1$s</string>
 </resources>

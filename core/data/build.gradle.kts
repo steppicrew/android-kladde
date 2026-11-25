@@ -38,7 +38,7 @@ room {
 
 dependencies {
     api(project(":core:model"))
-    implementation(libs.room.runtime)
+    api(libs.room.runtime)
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
     api(libs.coroutines.android)

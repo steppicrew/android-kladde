@@ -43,7 +43,7 @@ kotlin {
 }
 
 dependencies {
-    implementation(project(":core:model"))
+    implementation(project(":integration:adx"))
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     implementation(platform(libs.compose.bom))

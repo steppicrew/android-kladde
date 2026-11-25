@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="adx_connect_title">%1$s möchte in Kladde eintragen</string>
+    <string name="adx_connect_explainer">Die App kann nur ihre eigenen Einträge anlegen, ändern und löschen. Sie kann nichts aus Kladde lesen. Du kannst das jederzeit widerrufen.</string>
+    <string name="adx_connect_stream">%1$s (%2$s)</string>
+    <string name="adx_connect_new_tracker">Neuer Tracker „%1$s“</string>
+    <string name="adx_connect_existing_tracker">Zu „%1$s“ hinzufügen</string>
+    <string name="adx_connect_decline">Nicht erlauben</string>
+    <string name="adx_connect_unsupported">Diese Art von Daten kann Kladde noch nicht speichern.</string>
+    <string name="adx_connect_allow">Erlauben</string>
+    <string name="adx_connect_cancel">Abbrechen</string>
+    <string name="adx_connect_locked">Entsperre zuerst Kladde und versuche es dann erneut.</string>
+    <string name="adx_connect_close">Schließen</string>
+</resources>
