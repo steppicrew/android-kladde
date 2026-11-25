@@ -6,6 +6,7 @@ import de.steppicrew.kladde.adx.KladdeAdxHost
 import de.steppicrew.kladde.adx.KladdeAdxStore
 import de.steppicrew.kladde.data.DataPointRepository
 import de.steppicrew.kladde.data.KladdeDatabase
+import de.steppicrew.kladde.data.SubTypeLabelRepository
 import de.steppicrew.kladde.data.TrackerRepository
 
 /** Wires the app by hand until DI is set up. */
@@ -17,9 +18,10 @@ class KladdeApp :
     override val vaultLock get() = vault
     override val trackerRepository by lazy { TrackerRepository(database) }
     val dataPointRepository by lazy { DataPointRepository(database) }
+    val subTypeLabelRepository by lazy { SubTypeLabelRepository(database) }
 
     override fun onCreate() {
         super.onCreate()
-        AdxReceiver.init(this, KladdeAdxStore(vault, trackerRepository, dataPointRepository))
+        AdxReceiver.init(this, KladdeAdxStore(vault, trackerRepository, dataPointRepository, subTypeLabelRepository))
     }
 }

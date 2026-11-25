@@ -12,7 +12,9 @@ import de.steppicrew.adx.receiver.AdxConsentState
 import de.steppicrew.adx.receiver.AdxStreamGrant
 import de.steppicrew.kladde.data.DataPointRepository
 import de.steppicrew.kladde.data.KladdeDatabase
+import de.steppicrew.kladde.data.SubTypeLabelRepository
 import de.steppicrew.kladde.data.TrackerRepository
+import de.steppicrew.kladde.model.SubTypeLabelStatus
 import de.steppicrew.kladde.model.TrackerType
 import de.steppicrew.kladde.model.VaultLock
 import kotlinx.coroutines.flow.first
@@ -38,9 +40,12 @@ class KladdeAdxStoreTest {
         object : VaultLock {
             override var isUnlocked = true
         }
-    private val store = KladdeAdxStore(vault, trackers, points) { Instant.EPOCH }
+    private val labels = SubTypeLabelRepository(db)
+    private val newLabels = mutableListOf<NewLabel>()
+    private val store = KladdeAdxStore(vault, trackers, points, labels, { Instant.EPOCH }) { newLabels += it }
 
-    private val proposal = AdxStreamProposal("drinks.beer", "Beer", "counter", "count", listOf("Pils"))
+    private val proposal =
+        AdxStreamProposal("drinks.beer", "Beer", "counter", "count", listOf("Pils"), listOf("intake.volume_ml", "intake.abv_pct"))
     private val sender = AdxConsent("beer.app", "cert", "Beer Counter", AdxConsentState.APPROVED, emptyMap())
     private val grant = AdxStreamGrant(proposal, AdxStreamDecision.ACCEPTED, "tracker-1")
 
@@ -101,6 +106,39 @@ class KladdeAdxStoreTest {
         store.upsert(sender, grant, beer(1, sub = "Weizen"))
 
         assertEquals(listOf("Pils", "Weizen"), trackers.find("tracker-1")!!.subTypes)
+    }
+
+    @Test
+    fun `the first entry with a label opens a label record and reports it once`() {
+        store.upsert(sender, grant, beer(1, sub = "beerSmall"))
+        store.upsert(sender, grant, beer(2, sub = "beerSmall"))
+
+        val reported = newLabels.single()
+        assertEquals("beerSmall", reported.label.key)
+        assertEquals("Beer", reported.trackerName)
+        assertEquals("Beer Counter", reported.senderLabel)
+        assertEquals(SubTypeLabelStatus.OPEN, reported.label.status)
+        assertEquals(listOf("intake.volume_ml", "intake.abv_pct"), reported.label.attrKeys)
+        assertEquals("beer.app", reported.label.sourcePackage)
+        assertEquals(reported.label, labels.find(reported.label.id))
+    }
+
+    @Test
+    fun `an entry without a label opens nothing`() {
+        store.upsert(sender, grant, AdxOp.upsert("drinks.beer", "e2", 1, Instant.EPOCH, ZoneId.of("UTC")).value(1L).build())
+
+        assertTrue(newLabels.isEmpty())
+    }
+
+    @Test
+    fun `a label already looked at is not reported again`() {
+        store.upsert(sender, grant, beer(1, sub = "beerSmall"))
+        labels.ignore(newLabels.single().label.id)
+        newLabels.clear()
+
+        store.upsert(sender, grant, beer(2, sub = "beerSmall"))
+
+        assertTrue(newLabels.isEmpty())
     }
 
     @Test
