@@ -8,9 +8,10 @@ Play links to) and into PRIVACY.md, so the copies cannot drift apart.
     ./scripts/privacy-page.py _site [YYYY-MM-DD]     # HTML pages, dated today if no date
     ./scripts/privacy-page.py --markdown PRIVACY.md  # the English policy as Markdown
 
-English is index.html; every other language is index.<tag>.html. Each page has a language
-selector that switches to the page of another language. The English page also switches once
-to the reader's browser language when a page for it exists.
+English is index.html; every other language is index.<tag>.html. Each page links every
+language at the top and, when the reader's browser prefers another language that has a page,
+offers it in a hint. It never redirects: Play rejects a policy URL that doesn't land on the
+policy text itself.
 """
 
 import datetime
@@ -26,11 +27,11 @@ RES = ROOT / "app/src/main/res"
 SOURCE = "https://github.com/steppicrew/android-kladde"
 APP_NAME = "Kladde"
 
-# Android resource folder suffix → (BCP 47 tag, the language's own name). The order is the
-# selector's order; English first, as the default.
-LANGUAGES: dict[str, tuple[str, str]] = {
-    "": ("en", "English"),
-    "de": ("de", "Deutsch"),
+# Android resource folder suffix → (BCP 47 tag, the language's own name, the hint that offers
+# it in its own words). The order is the link order; English first, as the default.
+LANGUAGES: dict[str, tuple[str, str, str]] = {
+    "": ("en", "English", "This page is also available in English."),
+    "de": ("de", "Deutsch", "Diese Seite gibt es auch auf Deutsch."),
 }
 
 # Reading order of the page.
@@ -48,34 +49,29 @@ REQUIRED = ["privacy_title", "privacy_summary", "privacy_updated", "privacy_lang
     f"privacy_{section}_{part}" for section in SECTIONS for part in ("title", "body")
 ]
 
-# GitHub Pages can't pick a page by Accept-Language, so the English page does it once in the
-# browser. Links to English carry ?lang=en, so choosing English isn't undone.
-DETECT = """<script>
+# The script only *offers* the reader's language; it never navigates. Play wants the linked URL
+# to land on the policy text (health-connect-view was rejected as "indirect" on 2026-11-25 for a
+# page that switched by itself). A reader arriving from our own language links chose already.
+OFFER = """<script>
 (function () {
-  if (location.search.indexOf("lang=") >= 0) return;
-  var pages = %s;
+  if (document.referrer.indexOf(location.origin) === 0) return;
+  var pages = %s, here = %s;
   var wanted = navigator.languages || [navigator.language || ""];
   for (var i = 0; i < wanted.length; i++) {
     var base = wanted[i].toLowerCase().split("-")[0];
-    if (base in pages) { if (pages[base]) location.replace(pages[base]); return; }
+    if (!(base in pages)) continue;
+    if (base === here) return;
+    var a = document.createElement("a"), hint = document.getElementById("hint");
+    a.href = pages[base][0]; a.textContent = pages[base][1]; a.lang = base; a.hreflang = base;
+    hint.appendChild(a); hint.hidden = false;
+    return;
   }
 })();
 </script>"""
 
-SELECT = """<label>%s
-      <select onchange="location.href = this.value">
-%s
-      </select>
-    </label>
-    <noscript>%s</noscript>"""
-
 
 def page_name(tag: str) -> str:
     return "index.html" if tag == "en" else f"index.{tag}.html"
-
-
-def page_link(tag: str) -> str:
-    return page_name(tag) + ("?lang=en" if tag == "en" else "")
 
 
 def read_strings(folder: Path) -> dict[str, str]:
@@ -95,7 +91,7 @@ def load() -> dict[str, dict[str, str]]:
     """Strings per language tag. A translation must be complete: a policy half in English is
     not a translation."""
     found: dict[str, dict[str, str]] = {}
-    for suffix, (tag, _) in LANGUAGES.items():
+    for suffix, (tag, _, _) in LANGUAGES.items():
         values = read_strings(RES / ("values-" + suffix if suffix else "values"))
         missing = [key for key in REQUIRED if not values.get(key)]
         if missing:
@@ -113,7 +109,7 @@ def updated_text(values: dict[str, str], updated: str) -> str:
 
 
 def render(values: dict[str, str], tag: str, tags: list[str], updated: str) -> str:
-    names = {t: name for t, name in LANGUAGES.values()}
+    names = {t: name for t, name, _ in LANGUAGES.values()}
     sections = "\n".join(
         f"  <section>\n"
         f"    <h2>{html.escape(values[f'privacy_{s}_title'])}</h2>\n"
@@ -121,17 +117,16 @@ def render(values: dict[str, str], tag: str, tags: list[str], updated: str) -> s
         f"  </section>"
         for s in SECTIONS
     )
-    options = "\n".join(
-        f'        <option value="{page_link(t)}" lang="{t}"{" selected" if t == tag else ""}>'
-        f"{html.escape(names[t])}</option>"
+    hints = {t: hint for t, _, hint in LANGUAGES.values()}
+    # Every language under its own name; this one as text.
+    links = " · ".join(
+        f'<span aria-current="page">{html.escape(names[t])}</span>'
+        if t == tag
+        else f'<a href="{page_name(t)}" hreflang="{t}" lang="{t}">{html.escape(names[t])}</a>'
         for t in tags
     )
-    links = " · ".join(
-        f'<a href="{page_link(t)}" hreflang="{t}" lang="{t}">{html.escape(names[t])}</a>' for t in tags
-    )
-    selector = SELECT % (html.escape(values["privacy_language"]), options, links)
     alternates = "\n".join(f'<link rel="alternate" hreflang="{t}" href="{page_name(t)}">' for t in tags)
-    detect = DETECT % json.dumps({t: "" if t == "en" else page_name(t) for t in tags}) if tag == "en" else ""
+    offer = OFFER % (json.dumps({t: [page_name(t), hints[t]] for t in tags}, ensure_ascii=False), json.dumps(tag))
     title = f"{APP_NAME} — {values['privacy_title']}"
     return f"""<!DOCTYPE html>
 <html lang="{tag}">
@@ -140,7 +135,6 @@ def render(values: dict[str, str], tag: str, tags: list[str], updated: str) -> s
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{html.escape(title)}</title>
 {alternates}
-{detect}
 <style>
   :root {{ color-scheme: light dark; --bg: #fdfcf8; --fg: #1c1b18; --muted: #4a473f; --rule: #e3dfd3; --accent: #7a4f12; }}
   @media (prefers-color-scheme: dark) {{
@@ -151,30 +145,26 @@ def render(values: dict[str, str], tag: str, tags: list[str], updated: str) -> s
     margin: 0 auto; padding: 2rem 1rem 4rem; max-width: 42rem; background: var(--bg); color: var(--fg);
     font: 17px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }}
-  header {{ display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; justify-content: space-between; align-items: baseline; }}
   h1 {{ font-size: 1.9rem; line-height: 1.2; margin: 0; }}
   h2 {{ font-size: 1.15rem; margin: 2.25rem 0 .4rem; color: var(--accent); }}
   p {{ margin: 0 0 1rem; color: var(--muted); }}
   .lede {{ font-size: 1.1rem; color: var(--fg); margin: 1.5rem 0 2rem; }}
-  label {{ font-size: .9rem; color: var(--muted); }}
-  select {{ font: inherit; margin-left: .4rem; padding: .2rem .4rem; color: var(--fg); background: var(--bg);
-            border: 1px solid var(--rule); border-radius: .3rem; }}
   footer {{ margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--rule); font-size: .9rem; color: var(--muted); }}
   a {{ color: var(--accent); }}
+  nav {{ margin: 0 0 1.5rem; font-size: .9rem; line-height: 1.9; color: var(--muted); }}
+  .hint {{ margin: 0 0 1.5rem; padding: .6rem .9rem; border: 1px solid var(--rule); border-radius: .5rem; }}
 </style>
 </head>
 <body>
-<header>
-  <h1>{html.escape(APP_NAME)} · {html.escape(values["privacy_title"])}</h1>
-  <nav aria-label="{html.escape(values["privacy_language"])}">
-    {selector}
-  </nav>
-</header>
+<nav aria-label="{html.escape(values["privacy_language"])}">{links}</nav>
+<p class="hint" id="hint" hidden></p>
+<h1>{html.escape(APP_NAME)} · {html.escape(values["privacy_title"])}</h1>
 <p class="lede">{html.escape(values["privacy_summary"])}</p>
 {sections}
 <footer>
   <p>{html.escape(updated_text(values, updated))} · <a href="{SOURCE}">{SOURCE.removeprefix("https://")}</a></p>
 </footer>
+{offer}
 </body>
 </html>
 """

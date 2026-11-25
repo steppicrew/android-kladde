@@ -337,7 +337,8 @@ Goal: work on "dumb" storage (plain WebDAV) without a smart server.
 Privacy policy (linked from Play): https://steppicrew.github.io/android-kladde/
 - Its only source is `app/src/main/res/values*/privacy.xml` (English default, German).
   `scripts/privacy-page.py` builds one page per language (`index.html`, `index.de.html`)
-  with a language selector; the English page switches once to the browser's language.
+  with links to every language at the top and a hint offering the browser's language.
+  **Never redirect:** Play rejects a policy URL that doesn't land on the policy text.
   `.github/workflows/pages.yml` publishes it on every push to `main` that changes those
   files. `PRIVACY.md` is generated too: `./scripts/privacy-page.py --markdown PRIVACY.md`.
 - Every sentence is a claim about current behaviour — **change the text in the same commit
