@@ -100,3 +100,18 @@ internal interface RoutineDao {
     @Query("DELETE FROM routine_completions WHERE routine_id = :routineId")
     fun deleteCompletions(routineId: String)
 }
+
+@Dao
+internal interface BlockRuleDao {
+    @Query("SELECT * FROM block_rules")
+    fun observeRules(): Flow<List<BlockRuleEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    fun insertRules(rules: List<BlockRuleEntity>)
+
+    @Query("DELETE FROM block_rules WHERE routine_id = :routineId")
+    fun deleteRulesOf(routineId: String)
+
+    @Query("DELETE FROM block_rules WHERE routine_id = :id OR blocker_id = :id")
+    fun deleteRulesWith(id: String)
+}

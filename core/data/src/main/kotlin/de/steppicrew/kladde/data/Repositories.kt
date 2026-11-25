@@ -1,5 +1,6 @@
 package de.steppicrew.kladde.data
 
+import de.steppicrew.kladde.model.BlockRule
 import de.steppicrew.kladde.model.DataPoint
 import de.steppicrew.kladde.model.ExternalSource
 import de.steppicrew.kladde.model.Routine
@@ -141,12 +142,24 @@ class RoutineRepository(
             list.map { it.toModel() }
         }
 
-    fun save(routine: Routine) = db.routines().save(routine.toEntity())
+    fun observeRules(): Flow<List<BlockRule>> =
+        db.blockRules().observeRules().map { list -> list.map { BlockRule(it.routineId, it.blockerId) } }
 
-    /** Deletes the routine and what was ticked off for it. */
+    /** Saves [routine] and, in place of its earlier ones, the routines it gives way to. */
+    fun save(
+        routine: Routine,
+        blockers: Set<String> = emptySet(),
+    ) = db.runInTransaction {
+        db.routines().save(routine.toEntity())
+        db.blockRules().deleteRulesOf(routine.id)
+        db.blockRules().insertRules(blockers.map { BlockRuleEntity(routine.id, it) })
+    }
+
+    /** Deletes the routine, what was ticked off for it and every rule it is part of. */
     fun delete(id: String) =
         db.runInTransaction {
             db.routines().deleteCompletions(id)
+            db.blockRules().deleteRulesWith(id)
             db.routines().delete(id)
         }
 

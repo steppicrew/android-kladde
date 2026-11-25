@@ -135,20 +135,74 @@ enum class OccurrenceStatus {
 
     /** An event that isn't ticked off: it simply takes place. */
     HAPPENS,
+
+    /** Doesn't take place: a routine it gives way to happens that day ([Occurrence.blockedBy]). */
+    BLOCKED,
 }
 
 data class Occurrence(
     val routine: Routine,
     val date: LocalDate,
     val status: OccurrenceStatus,
+    /** For [OccurrenceStatus.BLOCKED]: the routines that take its place that day. */
+    val blockedBy: List<Routine> = emptyList(),
 )
 
-/** What is planned on which day, from the routines and what was ticked off. */
+/** "[routineId] doesn't take place on days when [blockerId] does." */
+data class BlockRule(
+    val routineId: String,
+    val blockerId: String,
+)
+
+/**
+ * Whether making [routineId] give way to [blockerId] would close a loop (A gives way to B gives
+ * way to A), given the [rules] there are. Such a rule is not offered.
+ */
+fun wouldCycle(
+    routineId: String,
+    blockerId: String,
+    rules: List<BlockRule>,
+): Boolean {
+    val blockersOf = rules.groupBy({ it.routineId }, { it.blockerId })
+    val seen = HashSet<String>()
+    val queue = ArrayDeque(listOf(blockerId))
+    while (queue.isNotEmpty()) {
+        val next = queue.removeFirst()
+        if (next == routineId) return true
+        if (seen.add(next)) queue.addAll(blockersOf[next].orEmpty())
+    }
+    return false
+}
+
+/**
+ * What is planned on which day, from the routines, what was ticked off and the block rules.
+ * Blocking is worked out per day, never stored: only a blocker that takes place that day blocks.
+ */
 class RoutinePlan(
     private val routines: List<Routine>,
     completions: List<RoutineCompletion>,
+    rules: List<BlockRule> = emptyList(),
 ) {
     private val completions = completions.associateBy { it.routineId to it.date }
+    private val byId = routines.associateBy { it.id }
+    private val blockersOf = rules.groupBy({ it.routineId }, { it.blockerId })
+
+    /** The routines that block [routine] on [date]; [path] guards against a loop in stored rules. */
+    private fun blockers(
+        routine: Routine,
+        date: LocalDate,
+        path: Set<String> = emptySet(),
+    ): List<Routine> =
+        blockersOf[routine.id]
+            .orEmpty()
+            .mapNotNull(byId::get)
+            .filter { it.id !in path && takesPlace(it, date, path + routine.id) }
+
+    private fun takesPlace(
+        routine: Routine,
+        date: LocalDate,
+        path: Set<String>,
+    ): Boolean = routine.occursOn(date) && blockers(routine, date, path).isEmpty()
 
     /** The occurrences on [date] in time order, untimed ones first; [today] decides what counts as missed. */
     fun day(
@@ -158,18 +212,25 @@ class RoutinePlan(
         routines
             .filter { it.occursOn(date) }
             .sortedWith(compareBy(nullsFirst()) { routine: Routine -> routine.time }.thenBy { it.title.lowercase() })
-            .map { routine -> Occurrence(routine, date, status(routine, date, today)) }
+            .map { routine -> occurrence(routine, date, today) }
 
-    private fun status(
+    private fun occurrence(
         routine: Routine,
         date: LocalDate,
         today: LocalDate,
-    ): OccurrenceStatus {
-        if (!routine.checkable) return OccurrenceStatus.HAPPENS
-        return when (completions[routine.id to date]?.status) {
-            CompletionStatus.DONE -> OccurrenceStatus.DONE
-            CompletionStatus.SKIPPED -> OccurrenceStatus.SKIPPED
-            null -> if (date.isBefore(today)) OccurrenceStatus.MISSED else OccurrenceStatus.OPEN
-        }
+    ): Occurrence {
+        // What the user ticked off stands, even if a blocker was added to that day later.
+        val answer = completions[routine.id to date]?.status
+        val blockedBy = if (answer == null) blockers(routine, date) else emptyList()
+        val status =
+            when {
+                blockedBy.isNotEmpty() -> OccurrenceStatus.BLOCKED
+                !routine.checkable -> OccurrenceStatus.HAPPENS
+                answer == CompletionStatus.DONE -> OccurrenceStatus.DONE
+                answer == CompletionStatus.SKIPPED -> OccurrenceStatus.SKIPPED
+                date.isBefore(today) -> OccurrenceStatus.MISSED
+                else -> OccurrenceStatus.OPEN
+            }
+        return Occurrence(routine, date, status, blockedBy)
     }
 }

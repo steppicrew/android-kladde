@@ -100,3 +100,10 @@ internal data class RoutineCompletionEntity(
     @ColumnInfo(name = "recorded_at") val recordedAt: Long,
     val zone: String,
 )
+
+/** "routine_id doesn't take place on days when blocker_id does." */
+@Entity(tableName = "block_rules", primaryKeys = ["routine_id", "blocker_id"], indices = [Index("blocker_id")])
+internal data class BlockRuleEntity(
+    @ColumnInfo(name = "routine_id") val routineId: String,
+    @ColumnInfo(name = "blocker_id") val blockerId: String,
+)

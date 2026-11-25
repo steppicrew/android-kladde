@@ -1,5 +1,6 @@
 package de.steppicrew.kladde.routines
 
+import de.steppicrew.kladde.model.BlockRule
 import de.steppicrew.kladde.model.Recurrence
 import de.steppicrew.kladde.model.Routine
 import java.time.DayOfWeek
@@ -22,6 +23,8 @@ internal data class RoutineDraft(
     val interval: String = "2",
     val time: LocalTime? = null,
     val checkable: Boolean = true,
+    /** The ids of the routines this one gives way to. */
+    val blockers: Set<String> = emptySet(),
 ) {
     /** The schedule the form describes, or null while it is incomplete. */
     val recurrence: Recurrence?
@@ -65,12 +68,19 @@ internal data class RoutineDraft(
     companion object {
         const val MAX_INTERVAL = 365
 
-        /** The form for an existing [routine]. */
-        fun of(routine: Routine): RoutineDraft =
+        /** The form for an existing [routine], with what it gives way to under [rules]. */
+        fun of(
+            routine: Routine,
+            rules: List<BlockRule> = emptyList(),
+        ): RoutineDraft =
             when (val recurrence = routine.recurrence) {
                 Recurrence.Daily -> RoutineDraft(routine.title, Repeat.EVERY_DAY)
                 is Recurrence.Weekly -> RoutineDraft(routine.title, Repeat.WEEKDAYS, days = recurrence.days)
                 is Recurrence.EveryNDays -> RoutineDraft(routine.title, Repeat.EVERY_N_DAYS, interval = recurrence.interval.toString())
-            }.copy(time = routine.time, checkable = routine.checkable)
+            }.copy(
+                time = routine.time,
+                checkable = routine.checkable,
+                blockers = rules.filter { it.routineId == routine.id }.mapTo(HashSet()) { it.blockerId },
+            )
     }
 }

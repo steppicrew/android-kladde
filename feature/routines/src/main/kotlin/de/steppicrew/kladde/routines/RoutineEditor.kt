@@ -40,6 +40,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import de.steppicrew.kladde.model.Routine
 import java.time.DayOfWeek
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -51,6 +52,7 @@ import java.time.format.TextStyle
 internal fun RoutineEditor(
     initial: RoutineDraft,
     isNew: Boolean,
+    blockerChoices: List<Routine>,
     onSave: (RoutineDraft) -> Unit,
     onDelete: () -> Unit,
     onCancel: () -> Unit,
@@ -76,6 +78,7 @@ internal fun RoutineEditor(
             )
             RepeatFields(draft) { draft = it }
             TimeAndTicking(draft, onPickTime = { pickTime = true }) { draft = it }
+            BlockerFields(draft, blockerChoices) { draft = it }
         }
         Row(Modifier.padding(horizontal = 24.dp, vertical = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Button(onClick = { onSave(draft) }, enabled = draft.isComplete) { Text(stringResource(R.string.routines_save)) }
@@ -144,7 +147,17 @@ private fun TimeDialog(
 /** Keeps a draft across rotation and process death as plain values. */
 private val DraftSaver =
     androidx.compose.runtime.saveable.listSaver<RoutineDraft, Any?>(
-        save = { listOf(it.title, it.repeat.name, it.days.map(DayOfWeek::name), it.interval, it.time?.toString(), it.checkable) },
+        save = {
+            listOf(
+                it.title,
+                it.repeat.name,
+                it.days.map(DayOfWeek::name),
+                it.interval,
+                it.time?.toString(),
+                it.checkable,
+                it.blockers.toList(),
+            )
+        },
         restore = { values ->
             @Suppress("UNCHECKED_CAST")
             RoutineDraft(
@@ -154,6 +167,7 @@ private val DraftSaver =
                 interval = values[3] as String,
                 time = (values[4] as String?)?.let(LocalTime::parse),
                 checkable = values[5] as Boolean,
+                blockers = (values[6] as List<String>).toSet(),
             )
         },
     )
@@ -165,6 +179,7 @@ private fun RoutineEditorPreview() {
         RoutineEditor(
             initial = RoutineDraft("Rüdersdorf", Repeat.WEEKDAYS, days = setOf(DayOfWeek.WEDNESDAY), checkable = false),
             isNew = false,
+            blockerChoices = emptyList(),
             onSave = {},
             onDelete = {},
             onCancel = {},
@@ -242,6 +257,31 @@ private fun TimeAndTicking(
             }
             // The row handles the toggle, so screen readers announce one control.
             Switch(checked = draft.checkable, onCheckedChange = null)
+        }
+    }
+}
+
+/** "Nicht an Tagen mit…": the routines this one gives way to. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun BlockerFields(
+    draft: RoutineDraft,
+    choices: List<Routine>,
+    onChange: (RoutineDraft) -> Unit,
+) {
+    if (choices.isEmpty()) return
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(stringResource(R.string.routines_blockers), style = MaterialTheme.typography.titleSmall)
+        Text(stringResource(R.string.routines_blockers_hint), style = MaterialTheme.typography.bodySmall)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            for (choice in choices) {
+                val selected = choice.id in draft.blockers
+                FilterChip(
+                    selected = selected,
+                    onClick = { onChange(draft.copy(blockers = if (selected) draft.blockers - choice.id else draft.blockers + choice.id)) },
+                    label = { Text(choice.title) },
+                )
+            }
         }
     }
 }

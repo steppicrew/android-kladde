@@ -1,6 +1,7 @@
 package de.steppicrew.kladde.data
 
 import androidx.test.core.app.ApplicationProvider
+import de.steppicrew.kladde.model.BlockRule
 import de.steppicrew.kladde.model.CompletionStatus
 import de.steppicrew.kladde.model.Recurrence
 import de.steppicrew.kladde.model.Routine
@@ -78,6 +79,28 @@ class RoutineRepositoryTest {
         }
 
         assertEquals((0L..6).map { day.plusDays(it) }, completions().map { it.date }.sorted())
+    }
+
+    private fun rules() = runBlocking { routines.observeRules().first() }
+
+    @Test
+    fun `saving a routine replaces what it gives way to`() {
+        routines.save(ruedersdorf)
+        routines.save(sport, setOf(ruedersdorf.id, "r3"))
+        routines.save(sport, setOf(ruedersdorf.id))
+
+        assertEquals(listOf(BlockRule(sport.id, ruedersdorf.id)), rules())
+    }
+
+    @Test
+    fun `deleting a blocker deletes the rules it is part of`() {
+        routines.save(sport, setOf(ruedersdorf.id))
+        routines.save(ruedersdorf, setOf("r3"))
+
+        routines.delete(ruedersdorf.id)
+
+        assertTrue(rules().isEmpty())
+        assertEquals(listOf(sport), all())
     }
 
     @Test

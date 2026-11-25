@@ -24,12 +24,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.steppicrew.kladde.data.RoutineRepository
+import de.steppicrew.kladde.model.BlockRule
 import de.steppicrew.kladde.model.CompletionStatus
 import de.steppicrew.kladde.model.Ids
 import de.steppicrew.kladde.model.Occurrence
@@ -38,6 +41,7 @@ import de.steppicrew.kladde.model.Recurrence
 import de.steppicrew.kladde.model.Routine
 import de.steppicrew.kladde.model.RoutineCompletion
 import de.steppicrew.kladde.model.RoutinePlan
+import de.steppicrew.kladde.model.wouldCycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -65,6 +69,7 @@ fun RoutinesScreen(repository: RoutineRepository) {
     val from = today.minusDays(1)
     val to = today.plusDays(DAYS_AHEAD)
     val routines by repository.observeAll().collectAsStateWithLifecycle(emptyList())
+    val rules by repository.observeRules().collectAsStateWithLifecycle(emptyList())
     val completions by remember(from, to) { repository.observeCompletions(from, to) }.collectAsStateWithLifecycle(emptyList())
     val scope = rememberCoroutineScope()
 
@@ -76,10 +81,14 @@ fun RoutinesScreen(repository: RoutineRepository) {
     if (current != null) {
         val routine = routines.firstOrNull { it.id == current }
         RoutineEditor(
-            initial = routine?.let(RoutineDraft::of) ?: RoutineDraft(),
+            initial = routine?.let { RoutineDraft.of(it, rules) } ?: RoutineDraft(),
             isNew = routine == null,
+            // What it can give way to: the others, bar those that would close a loop.
+            blockerChoices = routines.filter { it.id != current && !wouldCycle(current, it.id, rules) },
             onSave = { draft ->
-                draft.toRoutine(Ids.newId(), LocalDate.now(), Instant.now(), routine)?.let { io { repository.save(it) } }
+                draft.toRoutine(Ids.newId(), LocalDate.now(), Instant.now(), routine)?.let { saved ->
+                    io { repository.save(saved, draft.blockers.filterTo(HashSet()) { id -> routines.any { it.id == id } }) }
+                }
                 editing = null
             },
             onDelete = {
@@ -90,7 +99,7 @@ fun RoutinesScreen(repository: RoutineRepository) {
         )
         return
     }
-    val plan = RoutinePlan(routines, completions)
+    val plan = RoutinePlan(routines, completions, rules)
     WeekView(
         days = generateSequence(from) { it.plusDays(1) }.takeWhile { !it.isAfter(to) }.map { it to plan.day(it, today) }.toList(),
         today = today,
@@ -183,10 +192,16 @@ private fun OccurrenceRow(
 ) {
     val routine = occurrence.routine
     Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+        val blocked = occurrence.status == OccurrenceStatus.BLOCKED
         Column(Modifier.weight(1f).clickable { onEdit(routine) }.padding(vertical = 6.dp)) {
             val time = routine.time?.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
-            Text(listOfNotNull(time, routine.title).joinToString("  "), style = MaterialTheme.typography.bodyLarge)
-            statusText(occurrence.status)?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            Text(
+                listOfNotNull(time, routine.title).joinToString("  "),
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (blocked) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified,
+                textDecoration = if (blocked) TextDecoration.LineThrough else null,
+            )
+            statusText(occurrence)?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
         }
         when (occurrence.status) {
             OccurrenceStatus.OPEN, OccurrenceStatus.MISSED -> {
@@ -195,14 +210,15 @@ private fun OccurrenceRow(
             }
             OccurrenceStatus.DONE, OccurrenceStatus.SKIPPED ->
                 TextButton(onClick = { onReopen(occurrence) }) { Text(stringResource(R.string.routines_undo)) }
-            OccurrenceStatus.HAPPENS -> Unit
+            OccurrenceStatus.HAPPENS, OccurrenceStatus.BLOCKED -> Unit
         }
     }
 }
 
 @Composable
-private fun statusText(status: OccurrenceStatus): String? =
-    when (status) {
+private fun statusText(occurrence: Occurrence): String? =
+    when (occurrence.status) {
+        OccurrenceStatus.BLOCKED -> stringResource(R.string.routines_status_blocked, occurrence.blockedBy.joinToString(", ") { it.title })
         OccurrenceStatus.DONE -> stringResource(R.string.routines_status_done)
         OccurrenceStatus.SKIPPED -> stringResource(R.string.routines_status_skipped)
         OccurrenceStatus.MISSED -> stringResource(R.string.routines_status_missed)
@@ -219,7 +235,7 @@ private fun WeekViewPreview() {
     val today = LocalDate.of(2026, 11, 25)
     val sport = Routine("s", "Sport", Recurrence.Daily, today.minusDays(1), LocalTime.of(18, 0), true, Instant.EPOCH)
     val ruedersdorf = Routine("r", "Rüdersdorf", Recurrence.Weekly(setOf(DayOfWeek.WEDNESDAY)), today, null, false, Instant.EPOCH)
-    val plan = RoutinePlan(listOf(sport, ruedersdorf), emptyList())
+    val plan = RoutinePlan(listOf(sport, ruedersdorf), emptyList(), listOf(BlockRule(sport.id, ruedersdorf.id)))
     MaterialTheme {
         WeekView(
             days = (-1L..2).map { today.plusDays(it) }.map { it to plan.day(it, today) },

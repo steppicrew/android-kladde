@@ -74,6 +74,21 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun `4 to 5 keeps routines and adds an empty block_rules table`() {
+        helper.createDatabase(DB, 4).use { db ->
+            db.execSQL(
+                "INSERT INTO routines (id, title, rrule, start_date, time, checkable, created_at) " +
+                    "VALUES ('r1', 'Sport', 'FREQ=DAILY', '2026-11-25', '18:00', 1, 0)",
+            )
+        }
+
+        helper.runMigrationsAndValidate(DB, 5, true).use { db ->
+            assertEquals(1, db.count("routines"))
+            assertEquals(0, db.count("block_rules"))
+        }
+    }
+
     private fun androidx.sqlite.db.SupportSQLiteDatabase.count(table: String): Int =
         query("SELECT COUNT(*) FROM $table").use { cursor ->
             cursor.moveToFirst()

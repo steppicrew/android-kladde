@@ -1,5 +1,6 @@
 package de.steppicrew.kladde.routines
 
+import de.steppicrew.kladde.model.BlockRule
 import de.steppicrew.kladde.model.Recurrence
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -57,5 +58,13 @@ class RoutineFormTest {
             RoutineDraft("Rüdersdorf", Repeat.WEEKDAYS, days = setOf(DayOfWeek.WEDNESDAY), checkable = false),
             RoutineDraft.of(ruedersdorf),
         )
+    }
+
+    @Test
+    fun `the form shows what a routine gives way to`() {
+        val sport = RoutineDraft("Sport").toRoutine("r1", today, now)!!
+        val rules = listOf(BlockRule("r1", "r2"), BlockRule("r1", "r3"), BlockRule("r2", "r3"))
+
+        assertEquals(setOf("r2", "r3"), RoutineDraft.of(sport, rules).blockers)
     }
 }

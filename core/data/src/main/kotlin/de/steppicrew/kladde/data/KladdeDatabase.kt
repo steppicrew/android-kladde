@@ -14,10 +14,16 @@ import androidx.room.RoomDatabase
         SubTypeLabelEntity::class,
         RoutineEntity::class,
         RoutineCompletionEntity::class,
+        BlockRuleEntity::class,
     ],
-    version = 4,
-    // 2 only adds sub_type_labels; 3 only adds columns to it; 4 only adds the routine tables.
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4)],
+    version = 5,
+    // Each step only adds: 2 sub_type_labels, 3 columns to it, 4 the routine tables, 5 block_rules.
+    autoMigrations = [
+        AutoMigration(from = 1, to = 2),
+        AutoMigration(from = 2, to = 3),
+        AutoMigration(from = 3, to = 4),
+        AutoMigration(from = 4, to = 5),
+    ],
 )
 abstract class KladdeDatabase : RoomDatabase() {
     internal abstract fun trackers(): TrackerDao
@@ -27,6 +33,8 @@ abstract class KladdeDatabase : RoomDatabase() {
     internal abstract fun subTypeLabels(): SubTypeLabelDao
 
     internal abstract fun routines(): RoutineDao
+
+    internal abstract fun blockRules(): BlockRuleDao
 
     companion object {
         fun open(context: Context): KladdeDatabase = Room.databaseBuilder(context, KladdeDatabase::class.java, "kladde.db").build()
