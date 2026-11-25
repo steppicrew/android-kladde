@@ -218,6 +218,30 @@ class KladdeAdxStoreTest {
     }
 
     @Test
+    fun `describe asks about a sub that is new since the last description, not about older unused ones`() {
+        val withSmall = sender.copy(streams = mapOf(grant.proposal.key to described(small)))
+        val radler = AdxSub("session-1", "Radler")
+
+        store.describe(withSmall, described(small, radler))
+
+        val asked = newLabels.single().label
+        assertEquals("session-1", asked.key)
+        assertEquals("Radler", asked.shownName)
+        assertTrue("session-1" in trackers.find("tracker-1")!!.subTypes)
+        assertEquals(null, labels.findByKey("tracker-1", "beerSmall"))
+    }
+
+    @Test
+    fun `a new sub the sender describes completely is recorded without a question`() {
+        val drink = AdxSub("session-2", "Aperol", mapOf("intake.volume_ml" to 200, "intake.abv_pct" to 11))
+
+        store.describe(sender, described(drink))
+
+        assertTrue(newLabels.isEmpty())
+        assertEquals(SubTypeLabelStatus.DESCRIBED, labels.findByKey("tracker-1", "session-2")!!.status)
+    }
+
+    @Test
     fun `a locked vault answers busy to describe`() {
         vault.isUnlocked = false
 

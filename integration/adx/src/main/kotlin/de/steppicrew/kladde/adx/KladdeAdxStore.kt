@@ -59,15 +59,33 @@ class KladdeAdxStore(
         op.sub?.let { key -> noteLabel(sender, stream, tracker, key) }
     }
 
-    /** The sender renamed subs or changed their defaults: their label records follow. */
+    /**
+     * The sender renamed subs, changed their defaults or added subs; [sender] still holds the
+     * stream as it was. Known labels follow; a sub new since then is recorded and asked about
+     * now, as a new drink is the moment the user knows what it is. Subs the sender listed before
+     * but no entry used yet are left until an entry does.
+     */
     override fun describe(
         sender: AdxConsent,
         stream: AdxStreamGrant,
     ) {
         requireUnlocked()
-        val tracker = trackerFor(sender, stream)
+        var tracker = trackerFor(sender, stream)
+        val before =
+            sender.streams[stream.proposal.key]
+                ?.proposal
+                ?.subKeys
+                .orEmpty()
+                .toSet()
         for (sub in stream.proposal.subs) {
-            labels.findByKey(tracker.id, sub.key)?.let { refresh(it, stream) }
+            val known = labels.findByKey(tracker.id, sub.key)
+            when {
+                known != null -> refresh(known, stream)
+                sub.key !in before -> {
+                    tracker = tracker.withSubType(sub.key).also { if (it !== tracker) trackers.save(it) }
+                    noteLabel(sender, stream, tracker, sub.key)
+                }
+            }
         }
     }
 
