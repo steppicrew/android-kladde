@@ -82,7 +82,7 @@ internal fun PausesScreen(
                 Column(Modifier.fillMaxWidth().clickable { editing = pause.id }.padding(vertical = 12.dp)) {
                     Text(pauseSummary(pause), style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        if (pause.routineIds.isEmpty()) {
+                        if (pause.isForAll) {
                             val goOn = routines.filter { it.ignoresPauses }
                             if (goOn.isEmpty()) {
                                 stringResource(R.string.routines_pause_all)
@@ -90,7 +90,7 @@ internal fun PausesScreen(
                                 stringResource(R.string.routines_pause_all_but, goOn.joinToString(", ") { it.title })
                             }
                         } else {
-                            routines.filter { it.id in pause.routineIds }.joinToString(", ") { it.title }
+                            (pause.groups.sorted() + routines.filter { it.id in pause.routineIds }.map { it.title }).joinToString(", ")
                         },
                         style = MaterialTheme.typography.bodySmall,
                     )
@@ -213,7 +213,7 @@ private fun DatesFields(
 /** Keeps a draft across rotation and process death as plain values. */
 private val PauseDraftSaver =
     listSaver<PauseDraft, Any?>(
-        save = { listOf(it.note, it.from.toString(), it.until?.toString(), it.all, it.routineIds.toList()) },
+        save = { listOf(it.note, it.from.toString(), it.until?.toString(), it.all, it.routineIds.toList(), it.groups.toList()) },
         restore = { values ->
             @Suppress("UNCHECKED_CAST")
             PauseDraft(
@@ -222,6 +222,7 @@ private val PauseDraftSaver =
                 until = (values[2] as String?)?.let(LocalDate::parse),
                 all = values[3] as Boolean,
                 routineIds = (values[4] as List<String>).toSet(),
+                groups = (values[5] as List<String>).toSet(),
             )
         },
     )

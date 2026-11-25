@@ -210,6 +210,22 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun `13 to 14 keeps pauses, with no groups`() {
+        helper.createDatabase(DB, 13).use { db ->
+            db.execSQL(
+                "INSERT INTO routine_pauses (id, from_date, until_date, routine_ids, note) VALUES ('p1', '2026-12-01', NULL, '', 'Urlaub')",
+            )
+        }
+
+        helper.runMigrationsAndValidate(DB, 14, true).use { db ->
+            db.query("SELECT groups FROM routine_pauses").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("", cursor.getString(0))
+            }
+        }
+    }
+
     private fun androidx.sqlite.db.SupportSQLiteDatabase.count(table: String): Int =
         query("SELECT COUNT(*) FROM $table").use { cursor ->
             cursor.moveToFirst()

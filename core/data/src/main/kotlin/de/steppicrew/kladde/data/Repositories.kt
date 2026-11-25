@@ -204,8 +204,8 @@ class RoutineRepository(
 
     /**
      * Deletes the routine, what was ticked off for it, its single-day changes and every rule it is
-     * part of. It leaves the pauses naming it; one that named only it is deleted, as an empty list
-     * would mean all routines.
+     * part of. It leaves the pauses naming it; one that named only it (no other routine, no group)
+     * is deleted, as an empty one would mean all routines.
      */
     fun delete(id: String) =
         db.runInTransaction {
@@ -214,8 +214,8 @@ class RoutineRepository(
                 .all()
                 .map { it.toModel() }
                 .filter { id in it.routineIds }) {
-                val rest = pause.routineIds - id
-                if (rest.isEmpty()) db.pauses().delete(pause.id) else db.pauses().save(pause.copy(routineIds = rest).toEntity())
+                val rest = pause.copy(routineIds = pause.routineIds - id)
+                if (rest.isForAll) db.pauses().delete(pause.id) else db.pauses().save(rest.toEntity())
             }
             db.routines().deleteCompletions(id)
             db.overrides().deleteAllOf(id)

@@ -228,11 +228,17 @@ class RoutineRepositoryTest {
         pauseRepository.save(RoutinePause("all", day, null))
         pauseRepository.save(RoutinePause("both", day, null, setOf(sport.id, ruedersdorf.id)))
         pauseRepository.save(RoutinePause("sport", day, null, setOf(sport.id)))
+        pauseRepository.save(RoutinePause("work", day, null, setOf(sport.id), groups = setOf("Arbeit")))
 
         routines.delete(sport.id)
 
         assertEquals(
-            listOf(RoutinePause("all", day, null), RoutinePause("both", day, null, setOf(ruedersdorf.id))),
+            listOf(
+                RoutinePause("all", day, null),
+                RoutinePause("both", day, null, setOf(ruedersdorf.id)),
+                // Still names a group, so it doesn't turn into a pause for all routines.
+                RoutinePause("work", day, null, groups = setOf("Arbeit")),
+            ),
             pauses().sortedBy { it.id },
         )
     }

@@ -126,4 +126,19 @@ class RoutinePauseTest {
         val named = RoutinePlan(listOf(pills), emptyList(), pauses = listOf(vacation.copy(routineIds = setOf(pills.id))))
         assertEquals(OccurrenceStatus.PAUSED, named.day(wednesday, wednesday).single().status)
     }
+
+    @Test
+    fun `a pause for a group covers its routines, also one that joins later, and not the others`() {
+        val work = RoutinePause("p2", wednesday, wednesday, groups = setOf("Arbeit"))
+        val mails = Routine("mail", "Mails", Recurrence.Daily, start, null, true, Instant.EPOCH, groups = setOf("Arbeit"))
+        val pills = mails.copy(id = "pills", title = "Tabletten", groups = setOf("Arbeit"), ignoresPauses = true)
+
+        val plan = RoutinePlan(listOf(mails, pills, reading), emptyList(), pauses = listOf(work))
+        assertEquals(OccurrenceStatus.PAUSED, plan.of(wednesday, mails).status)
+        assertEquals(OccurrenceStatus.PAUSED, plan.of(wednesday, pills).status)
+        assertEquals(OccurrenceStatus.OPEN, plan.of(wednesday, reading).status)
+
+        val joined = RoutinePlan(listOf(reading.copy(groups = setOf("Arbeit"))), emptyList(), pauses = listOf(work))
+        assertEquals(OccurrenceStatus.PAUSED, joined.of(wednesday, reading).status)
+    }
 }

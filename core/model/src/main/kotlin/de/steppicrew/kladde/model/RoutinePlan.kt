@@ -29,8 +29,8 @@ data class RoutineExtra(
 
 /**
  * A pause, e.g. a vacation: from [from] to [until] (local dates, both included; null = until the
- * user ends it). It covers the routines in [routineIds], or when that is empty all of them but
- * those that go on during pauses ([Routine.ignoresPauses]).
+ * user ends it). It covers the routines in [routineIds] and those in [groups], also ones that join
+ * a group later; with neither, all routines but those that go on during pauses ([Routine.ignoresPauses]).
  */
 data class RoutinePause(
     val id: String,
@@ -39,14 +39,21 @@ data class RoutinePause(
     val routineIds: Set<String> = emptySet(),
     /** What it is, e.g. "Urlaub"; may be blank. */
     val note: String = "",
+    /** Groups whose routines it covers ([Routine.groups]). */
+    val groups: Set<String> = emptySet(),
 ) {
+    /** For all routines: it names neither routines nor groups. */
+    val isForAll: Boolean get() = routineIds.isEmpty() && groups.isEmpty()
+
     /** Whether [date] lies inside the pause. */
     fun isOn(date: LocalDate): Boolean = !date.isBefore(from) && (until == null || !date.isAfter(until))
 
     fun covers(
         routine: Routine,
         date: LocalDate,
-    ): Boolean = isOn(date) && if (routineIds.isEmpty()) !routine.ignoresPauses else routine.id in routineIds
+    ): Boolean =
+        isOn(date) &&
+            if (isForAll) !routine.ignoresPauses else routine.id in routineIds || routine.groups.any { it in groups }
 }
 
 /**

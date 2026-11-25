@@ -79,9 +79,12 @@ internal fun RoutinePauseEntity.toModel() =
         id = id,
         from = LocalDate.parse(fromDate),
         until = untilDate?.let(LocalDate::parse),
-        routineIds = if (routineIds.isEmpty()) emptySet() else routineIds.split(SUB_TYPE_SEPARATOR).toSet(),
+        routineIds = routineIds.splitSet(),
         note = note,
+        groups = groups.splitSet(),
     )
+
+private fun String.splitSet(): Set<String> = if (isEmpty()) emptySet() else split(SUB_TYPE_SEPARATOR).toSet()
 
 internal fun RoutinePause.toEntity() =
     RoutinePauseEntity(
@@ -90,4 +93,5 @@ internal fun RoutinePause.toEntity() =
         untilDate = until?.toString(),
         routineIds = routineIds.sorted().joinToString(SUB_TYPE_SEPARATOR),
         note = note,
+        groups = groups.sorted().joinToString(SUB_TYPE_SEPARATOR),
     )

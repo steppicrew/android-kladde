@@ -10,38 +10,40 @@ internal data class PauseDraft(
     val from: LocalDate,
     /** Null: until the user ends it. */
     val until: LocalDate?,
-    /** All routines (the default), or only [routineIds]. */
+    /** All routines (the default), or only [routineIds] and the routines in [groups]. */
     val all: Boolean = true,
     val routineIds: Set<String> = emptySet(),
+    /** Whole groups, which also cover routines that join them later. */
+    val groups: Set<String> = emptySet(),
 ) {
-    val isComplete: Boolean get() = (until == null || !until.isBefore(from)) && (all || routineIds.isNotEmpty())
+    val isComplete: Boolean
+        get() = (until == null || !until.isBefore(from)) && (all || routineIds.isNotEmpty() || groups.isNotEmpty())
 
     /** The pause this draft makes, keeping [id]; null while it is incomplete. */
     fun toPause(id: String): RoutinePause? =
-        if (isComplete) RoutinePause(id, from, until, if (all) emptySet() else routineIds, note.trim()) else null
+        if (isComplete) {
+            RoutinePause(id, from, until, if (all) emptySet() else routineIds, note.trim(), if (all) emptySet() else groups)
+        } else {
+            null
+        }
 
-    /** Whether every routine in [group] is picked. */
-    fun hasGroup(
-        group: String,
-        routines: List<Routine>,
-    ): Boolean {
-        val members = routines.filter { group in it.groups }.map { it.id }
-        return members.isNotEmpty() && routineIds.containsAll(members)
-    }
+    /** Whether [routine] is covered through one of the picked [groups]. */
+    fun coversByGroup(routine: Routine): Boolean = routine.groups.any { it in groups }
 
-    /** Picks all routines in [group], or, when they are all picked already, takes them out. */
+    /** Picks [group] as a whole, or takes it out; its routines need no picking of their own then. */
     fun toggleGroup(
         group: String,
         routines: List<Routine>,
     ): PauseDraft {
+        if (group in groups) return copy(groups = groups - group)
         val members = routines.filter { group in it.groups }.mapTo(HashSet()) { it.id }
-        return copy(routineIds = if (hasGroup(group, routines)) routineIds - members else routineIds + members)
+        return copy(groups = groups + group, routineIds = routineIds - members)
     }
 
     companion object {
         /** A new pause: from today for a week, for all routines. */
         fun new(today: LocalDate) = PauseDraft("", today, today.plusWeeks(1))
 
-        fun of(pause: RoutinePause) = PauseDraft(pause.note, pause.from, pause.until, pause.routineIds.isEmpty(), pause.routineIds)
+        fun of(pause: RoutinePause) = PauseDraft(pause.note, pause.from, pause.until, pause.isForAll, pause.routineIds, pause.groups)
     }
 }

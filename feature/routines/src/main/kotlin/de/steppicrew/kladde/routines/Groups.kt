@@ -62,7 +62,10 @@ internal fun GroupFields(
     }
 }
 
-/** For a pause of only some routines: a chip per group that picks all its routines, then one per routine. */
+/**
+ * For a pause of only some routines: a chip per group, which covers its routines now and later,
+ * then one per routine; a routine covered by a picked group shows picked.
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun PausedRoutines(
@@ -76,7 +79,7 @@ internal fun PausedRoutines(
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             for (group in groups) {
                 FilterChip(
-                    selected = draft.hasGroup(group, routines),
+                    selected = group in draft.groups,
                     onClick = { onChange(draft.toggleGroup(group, routines)) },
                     label = { Text(group) },
                 )
@@ -85,9 +88,11 @@ internal fun PausedRoutines(
     }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         for (routine in routines) {
-            val selected = routine.id in draft.routineIds
+            val byGroup = draft.coversByGroup(routine)
+            val selected = byGroup || routine.id in draft.routineIds
             FilterChip(
                 selected = selected,
+                enabled = !byGroup,
                 onClick = {
                     onChange(
                         draft.copy(routineIds = if (selected) draft.routineIds - routine.id else draft.routineIds + routine.id),

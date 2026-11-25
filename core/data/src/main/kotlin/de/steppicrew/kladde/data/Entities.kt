@@ -123,7 +123,10 @@ internal data class OccurrenceOverrideEntity(
     @ColumnInfo(name = "new_time") val newTime: String? = null,
 )
 
-/** A pause from–until (ISO dates, until null = open); routine_ids joined by [SUB_TYPE_SEPARATOR], empty = all. */
+/**
+ * A pause from–until (ISO dates, until null = open); routine_ids and group names joined by
+ * [SUB_TYPE_SEPARATOR], both empty = all.
+ */
 @Entity(tableName = "routine_pauses")
 internal data class RoutinePauseEntity(
     @PrimaryKey val id: String,
@@ -131,6 +134,7 @@ internal data class RoutinePauseEntity(
     @ColumnInfo(name = "until_date") val untilDate: String?,
     @ColumnInfo(name = "routine_ids") val routineIds: String,
     val note: String,
+    @ColumnInfo(defaultValue = "") val groups: String = "",
 )
 
 /** One more occurrence of a routine on an ISO date its schedule doesn't have. */

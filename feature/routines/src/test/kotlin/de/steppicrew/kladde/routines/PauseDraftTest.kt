@@ -46,7 +46,7 @@ class PauseDraftTest {
     }
 
     @Test
-    fun `a group chip picks all its routines, and takes them out again`() {
+    fun `a group is kept as a group in the pause, and its routines need no picking`() {
         fun routine(
             id: String,
             vararg groups: String,
@@ -64,9 +64,16 @@ class PauseDraftTest {
         val draft = PauseDraft.new(LocalDate.of(2026, 11, 25)).copy(all = false, routineIds = setOf("sport", "mail"))
 
         val work = draft.toggleGroup("Arbeit", routines)
-        assertEquals(setOf("sport", "mail", "standup"), work.routineIds)
-        assertTrue(work.hasGroup("Arbeit", routines))
-        assertEquals(setOf("sport"), work.toggleGroup("Arbeit", routines).routineIds)
-        assertFalse(draft.hasGroup("Leer", routines))
+        assertEquals(setOf("Arbeit"), work.groups)
+        assertEquals(setOf("sport"), work.routineIds)
+        assertTrue(work.coversByGroup(routines[1]))
+        assertFalse(work.coversByGroup(routines[2]))
+        val pause = work.toPause("p1")!!
+        assertEquals(setOf("Arbeit"), pause.groups)
+        assertEquals(work, PauseDraft.of(pause))
+
+        val off = work.toggleGroup("Arbeit", routines)
+        assertEquals(emptySet<String>(), off.groups)
+        assertTrue(PauseDraft.new(LocalDate.of(2026, 11, 25)).copy(all = false, groups = setOf("Arbeit")).isComplete)
     }
 }
