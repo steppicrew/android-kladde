@@ -26,7 +26,6 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.steppicrew.kladde.model.BlockRule
-import de.steppicrew.kladde.model.CompletionStatus
 import de.steppicrew.kladde.model.Occurrence
 import de.steppicrew.kladde.model.OccurrenceStatus
 import de.steppicrew.kladde.model.Recurrence
@@ -47,8 +46,7 @@ internal fun WeekView(
     hasRoutines: Boolean,
     activePause: RoutinePause?,
     onPauses: () -> Unit,
-    onAnswer: (Occurrence, CompletionStatus) -> Unit,
-    onReopen: (Occurrence) -> Unit,
+    onAction: (Occurrence, RowAction) -> Unit,
     onOpen: (Occurrence) -> Unit,
     onAdd: () -> Unit,
 ) {
@@ -71,7 +69,7 @@ internal fun WeekView(
                     }
                     // A routine can be on a day twice when one was moved there: the planned day tells them apart.
                     items(occurrences, key = { "$date-${it.routine.id}-${it.originalDate}" }) { occurrence ->
-                        OccurrenceRow(occurrence, onAnswer, onReopen, onOpen)
+                        OccurrenceRow(occurrence, rowActions(occurrence, today), onAction, onOpen)
                     }
                     item(key = "$date-divider") { HorizontalDivider(Modifier.padding(top = 8.dp)) }
                 }
@@ -127,8 +125,8 @@ private fun DayHeader(
 @Composable
 private fun OccurrenceRow(
     occurrence: Occurrence,
-    onAnswer: (Occurrence, CompletionStatus) -> Unit,
-    onReopen: (Occurrence) -> Unit,
+    actions: List<RowAction>,
+    onAction: (Occurrence, RowAction) -> Unit,
     onOpen: (Occurrence) -> Unit,
 ) {
     val routine = occurrence.routine
@@ -155,20 +153,50 @@ private fun OccurrenceRow(
                 )
             }
         }
-        when (occurrence.status) {
-            OccurrenceStatus.OPEN, OccurrenceStatus.MISSED -> {
-                TextButton(onClick = { onAnswer(occurrence, CompletionStatus.DONE) }) { Text(stringResource(R.string.routines_done)) }
-                TextButton(onClick = { onAnswer(occurrence, CompletionStatus.SKIPPED) }) { Text(stringResource(R.string.routines_skip)) }
-            }
-            OccurrenceStatus.DONE, OccurrenceStatus.SKIPPED ->
-                TextButton(onClick = { onReopen(occurrence) }) { Text(stringResource(R.string.routines_undo)) }
-            // Done on vacation anyway counts; skipping a paused day says nothing new.
-            OccurrenceStatus.PAUSED ->
-                if (routine.checkable) {
-                    TextButton(onClick = { onAnswer(occurrence, CompletionStatus.DONE) }) { Text(stringResource(R.string.routines_done)) }
-                }
-            OccurrenceStatus.HAPPENS, OccurrenceStatus.BLOCKED, OccurrenceStatus.CANCELLED -> Unit
+        for (action in actions) {
+            TextButton(onClick = { onAction(occurrence, action) }) { Text(stringResource(action.label)) }
         }
+    }
+}
+
+/** What a row's buttons do. */
+internal enum class RowAction(
+    val label: Int,
+) {
+    DONE(R.string.routines_done),
+    SKIP(R.string.routines_skip),
+
+    /** Takes back done or skipped. */
+    UNDO(R.string.routines_undo),
+
+    /** "Auslassen" on a day still to come: the same as "Diesmal absagen". */
+    CANCEL_ONCE(R.string.routines_skip),
+
+    /** Brings a cancelled one back. */
+    RESTORE(R.string.routines_undo),
+}
+
+/**
+ * The buttons a row offers. Nothing still to come can be done yet: skipping it cancels it for
+ * that day, so a blocker stops blocking. Done on vacation anyway counts; skipping a paused day
+ * says nothing new. An extra day is removed from its menu, not skipped.
+ */
+internal fun rowActions(
+    occurrence: Occurrence,
+    today: LocalDate,
+): List<RowAction> {
+    val future = occurrence.date.isAfter(today)
+    return when (occurrence.status) {
+        OccurrenceStatus.OPEN, OccurrenceStatus.MISSED ->
+            when {
+                !future -> listOf(RowAction.DONE, RowAction.SKIP)
+                occurrence.isExtra -> emptyList()
+                else -> listOf(RowAction.CANCEL_ONCE)
+            }
+        OccurrenceStatus.DONE, OccurrenceStatus.SKIPPED -> listOf(RowAction.UNDO)
+        OccurrenceStatus.PAUSED -> if (occurrence.routine.checkable && !future) listOf(RowAction.DONE) else emptyList()
+        OccurrenceStatus.CANCELLED -> listOf(RowAction.RESTORE)
+        OccurrenceStatus.HAPPENS, OccurrenceStatus.BLOCKED -> emptyList()
     }
 }
 
@@ -207,8 +235,7 @@ private fun WeekViewPreview() {
             hasRoutines = true,
             activePause = null,
             onPauses = {},
-            onAnswer = { _, _ -> },
-            onReopen = {},
+            onAction = { _, _ -> },
             onOpen = {},
             onAdd = {},
         )

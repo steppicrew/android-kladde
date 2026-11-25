@@ -84,8 +84,7 @@ fun RoutinesScreen(
         hasRoutines = routines.isNotEmpty(),
         activePause = pauses.firstOrNull { it.isOn(today) },
         onPauses = { showPauses = true },
-        onAnswer = { occurrence, status -> io { repository.answer(occurrence, status) } },
-        onReopen = { occurrence -> io { repository.reopen(occurrence.routine.id, occurrence.originalDate) } },
+        onAction = { occurrence, action -> io { repository.act(occurrence, action) } },
         onOpen = { menuFor = it },
         onAdd = {
             editing = ""
@@ -145,11 +144,21 @@ private fun rememberToday(): LocalDate {
     return today
 }
 
-/** Records done or skipped, under the day the occurrence was planned for. */
-private fun RoutineRepository.answer(
+/** Does what a row's button says; answers and changes are kept under the day it was planned for. */
+private fun RoutineRepository.act(
     occurrence: Occurrence,
-    status: CompletionStatus,
-) = complete(RoutineCompletion(occurrence.routine.id, occurrence.originalDate, status, Instant.now(), ZoneId.systemDefault()))
+    action: RowAction,
+) {
+    val id = occurrence.routine.id
+    val planned = occurrence.originalDate
+    when (action) {
+        RowAction.DONE -> complete(RoutineCompletion(id, planned, CompletionStatus.DONE, Instant.now(), ZoneId.systemDefault()))
+        RowAction.SKIP -> complete(RoutineCompletion(id, planned, CompletionStatus.SKIPPED, Instant.now(), ZoneId.systemDefault()))
+        RowAction.UNDO -> reopen(id, planned)
+        RowAction.CANCEL_ONCE -> change(id, planned, null)
+        RowAction.RESTORE -> restore(id, planned)
+    }
+}
 
 /** The form for the routine [id] ("" for a new one), saved with what it gives way to. */
 @Composable
