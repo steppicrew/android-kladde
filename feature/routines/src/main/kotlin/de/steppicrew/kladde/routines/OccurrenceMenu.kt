@@ -22,22 +22,28 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
-/** What can be done with one occurrence: move or cancel just this one, bring it back, or change the routine. */
+/**
+ * What can be done with one occurrence: move or cancel just this one, bring it back, add the
+ * routine on another day too, or change the routine. An extra one is moved or removed instead.
+ */
 @Composable
 internal fun OccurrenceMenu(
     occurrence: Occurrence,
     onMove: (LocalDate) -> Unit,
     onCancel: () -> Unit,
     onRestore: () -> Unit,
+    onAddExtra: (LocalDate) -> Unit,
+    onRemoveExtra: () -> Unit,
     onEdit: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var pickDate by remember { mutableStateOf(false) }
-    if (pickDate) {
+    // Which date is being picked for: a move, an extra day, or none.
+    var picking by remember { mutableStateOf<((LocalDate) -> Unit)?>(null) }
+    picking?.let { action ->
         DateDialog(
             initial = occurrence.date,
             onPick = {
-                onMove(it)
+                action(it)
                 onDismiss()
             },
             onDismiss = onDismiss,
@@ -56,11 +62,16 @@ internal fun OccurrenceMenu(
         title = { Text("${occurrence.routine.title}, ${occurrence.date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))}") },
         text = {
             Column {
-                TextButton(onClick = { pickDate = true }) { Text(stringResource(R.string.routines_move)) }
-                if (occurrence.status != OccurrenceStatus.CANCELLED) {
-                    TextButton(onClick = then(onCancel)) { Text(stringResource(R.string.routines_cancel_once)) }
+                TextButton(onClick = { picking = onMove }) { Text(stringResource(R.string.routines_move)) }
+                if (occurrence.isExtra) {
+                    TextButton(onClick = then(onRemoveExtra)) { Text(stringResource(R.string.routines_remove_extra)) }
+                } else {
+                    if (occurrence.status != OccurrenceStatus.CANCELLED) {
+                        TextButton(onClick = then(onCancel)) { Text(stringResource(R.string.routines_cancel_once)) }
+                    }
+                    if (changed) TextButton(onClick = then(onRestore)) { Text(stringResource(R.string.routines_restore)) }
                 }
-                if (changed) TextButton(onClick = then(onRestore)) { Text(stringResource(R.string.routines_restore)) }
+                TextButton(onClick = { picking = onAddExtra }) { Text(stringResource(R.string.routines_add_extra)) }
                 TextButton(onClick = then(onEdit)) { Text(stringResource(R.string.routines_edit)) }
             }
         },

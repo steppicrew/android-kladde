@@ -63,4 +63,7 @@
     <string name="routines_nth_last">Letzter</string>
     <string name="routines_last_day">Letzter Tag</string>
     <string name="routines_month_days_hint">Hat ein Monat den Tag nicht, wie den 31. im November, fällt er aus</string>
+    <string name="routines_add_extra">Zusätzlich am …</string>
+    <string name="routines_remove_extra">Zusatztermin entfernen</string>
+    <string name="routines_extra">Zusätzlich</string>
 </resources>

@@ -125,3 +125,10 @@ internal data class RoutinePauseEntity(
     @ColumnInfo(name = "routine_ids") val routineIds: String,
     val note: String,
 )
+
+/** One more occurrence of a routine on an ISO date its schedule doesn't have. */
+@Entity(tableName = "routine_extras", primaryKeys = ["routine_id", "date"])
+internal data class RoutineExtraEntity(
+    @ColumnInfo(name = "routine_id") val routineId: String,
+    val date: String,
+)

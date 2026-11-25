@@ -7,6 +7,7 @@ import de.steppicrew.kladde.model.OccurrenceOverride
 import de.steppicrew.kladde.model.Recurrence
 import de.steppicrew.kladde.model.Routine
 import de.steppicrew.kladde.model.RoutineCompletion
+import de.steppicrew.kladde.model.RoutineExtra
 import de.steppicrew.kladde.model.RoutinePause
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -29,6 +30,7 @@ class RoutineRepositoryTest {
     private val db = KladdeDatabase.inMemory(ApplicationProvider.getApplicationContext())
     private val routines = RoutineRepository(db)
     private val pauseRepository = RoutinePauseRepository(db)
+    private val extraRepository = RoutineExtraRepository(db)
     private val day = LocalDate.of(2026, 11, 25)
     private val zone = ZoneId.of("Europe/Berlin")
     private val sport = Routine("r1", "Sport", Recurrence.Daily, day, LocalTime.of(18, 0), true, Instant.EPOCH)
@@ -168,6 +170,32 @@ class RoutineRepositoryTest {
             listOf(RoutinePause("all", day, null), RoutinePause("both", day, null, setOf(ruedersdorf.id))),
             pauses().sortedBy { it.id },
         )
+    }
+
+    private fun extras() = runBlocking { extraRepository.observeAll().first() }
+
+    @Test
+    fun `extras are added once, moved and removed`() {
+        val friday = RoutineExtra(ruedersdorf.id, day.plusDays(2))
+        extraRepository.add(friday)
+        extraRepository.add(friday)
+        assertEquals(listOf(friday), extras())
+
+        extraRepository.move(friday, day.plusDays(3))
+        assertEquals(listOf(friday.copy(date = day.plusDays(3))), extras())
+
+        extraRepository.remove(friday.copy(date = day.plusDays(3)))
+        assertTrue(extras().isEmpty())
+    }
+
+    @Test
+    fun `deleting a routine deletes its extras`() {
+        routines.save(ruedersdorf)
+        extraRepository.add(RoutineExtra(ruedersdorf.id, day.plusDays(2)))
+
+        routines.delete(ruedersdorf.id)
+
+        assertTrue(extras().isEmpty())
     }
 
     @Test

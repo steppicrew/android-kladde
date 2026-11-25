@@ -79,6 +79,8 @@ data class Occurrence(
     val originalDate: LocalDate = date,
     /** For [OccurrenceStatus.PAUSED]: the pause it falls into. */
     val pausedBy: RoutinePause? = null,
+    /** Added on a day the schedule doesn't have ([RoutineExtra]). */
+    val isExtra: Boolean = false,
 ) {
     val isMoved: Boolean get() = originalDate != date
 }

@@ -6,6 +6,7 @@ import de.steppicrew.kladde.model.ExternalSource
 import de.steppicrew.kladde.model.OccurrenceOverride
 import de.steppicrew.kladde.model.Routine
 import de.steppicrew.kladde.model.RoutineCompletion
+import de.steppicrew.kladde.model.RoutineExtra
 import de.steppicrew.kladde.model.RoutinePause
 import de.steppicrew.kladde.model.SubTypeLabel
 import de.steppicrew.kladde.model.SubTypeLabelStatus
@@ -199,6 +200,7 @@ class RoutineRepository(
             }
             db.routines().deleteCompletions(id)
             db.overrides().deleteAllOf(id)
+            db.extras().removeAllOf(id)
             db.blockRules().deleteRulesWith(id)
             db.routines().delete(id)
         }
@@ -222,4 +224,25 @@ class RoutinePauseRepository(
     fun save(pause: RoutinePause) = db.pauses().save(pause.toEntity())
 
     fun delete(id: String) = db.pauses().delete(id)
+}
+
+/** Extra occurrences on days a routine's schedule doesn't have; [RoutineRepository.delete] removes a routine's. */
+class RoutineExtraRepository(
+    private val db: KladdeDatabase,
+) {
+    fun observeAll(): Flow<List<RoutineExtra>> =
+        db.extras().observeAll().map { list -> list.map { RoutineExtra(it.routineId, LocalDate.parse(it.date)) } }
+
+    fun add(extra: RoutineExtra) = db.extras().add(RoutineExtraEntity(extra.routineId, extra.date.toString()))
+
+    fun remove(extra: RoutineExtra) = db.extras().remove(extra.routineId, extra.date.toString())
+
+    /** Moves an extra to [newDate], keeping what was ticked off for it under the old day. */
+    fun move(
+        extra: RoutineExtra,
+        newDate: LocalDate,
+    ) = db.runInTransaction {
+        remove(extra)
+        add(extra.copy(date = newDate))
+    }
 }

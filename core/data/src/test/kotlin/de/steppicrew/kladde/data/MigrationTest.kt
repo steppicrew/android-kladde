@@ -113,6 +113,20 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun `7 to 8 keeps pauses and adds an empty routine_extras table`() {
+        helper.createDatabase(DB, 7).use { db ->
+            db.execSQL(
+                "INSERT INTO routine_pauses (id, from_date, until_date, routine_ids, note) VALUES ('p1', '2026-12-01', NULL, '', 'Urlaub')",
+            )
+        }
+
+        helper.runMigrationsAndValidate(DB, 8, true).use { db ->
+            assertEquals(1, db.count("routine_pauses"))
+            assertEquals(0, db.count("routine_extras"))
+        }
+    }
+
     private fun androidx.sqlite.db.SupportSQLiteDatabase.count(table: String): Int =
         query("SELECT COUNT(*) FROM $table").use { cursor ->
             cursor.moveToFirst()

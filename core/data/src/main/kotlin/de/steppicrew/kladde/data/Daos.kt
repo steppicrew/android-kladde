@@ -148,3 +148,21 @@ internal interface RoutinePauseDao {
     @Query("DELETE FROM routine_pauses WHERE id = :id")
     fun delete(id: String)
 }
+
+@Dao
+internal interface RoutineExtraDao {
+    @Query("SELECT * FROM routine_extras")
+    fun observeAll(): Flow<List<RoutineExtraEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    fun add(extra: RoutineExtraEntity)
+
+    @Query("DELETE FROM routine_extras WHERE routine_id = :routineId AND date = :date")
+    fun remove(
+        routineId: String,
+        date: String,
+    )
+
+    @Query("DELETE FROM routine_extras WHERE routine_id = :routineId")
+    fun removeAllOf(routineId: String)
+}
