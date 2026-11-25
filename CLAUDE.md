@@ -58,7 +58,7 @@ backdoor. Hilt and SQLCipher are not wired yet (manual wiring in `KladdeApp`).
 | Build | Gradle Kotlin DSL, version catalog (`gradle/libs.versions.toml`) |
 | Toolchain | Same as ADX: AGP 8.13, Gradle 8.13, Kotlin 2.2.20, JDK 21, compile/target SDK 37 |
 | Min SDK | (open) proposed 26 — set to 26 for now |
-| App integration | ADX receiver (`../app-adx`, composite build); see below |
+| App integration | ADX receiver (`../android-apx`, composite build); see below |
 
 ## Module layout (proposed)
 
@@ -220,9 +220,9 @@ Locked vault + notification actions:
 ## Integration API for other apps: ADX
 
 Other apps (first: "Steppi's Beer Counter") log data into Kladde through **ADX — App Data
-Exchange**, the owner's own library in `../app-adx` (decision: `docs/decisions/0001-app-integration-via-adx.md`).
+Exchange**, the owner's own library in `../android-apx` (decision: `docs/decisions/0001-app-integration-via-adx.md`).
 The wire format, consent model and status codes are defined in
-`../app-adx/docs/ADX-SPEC.md` — read it there, don't restate it here. Kladde is a
+`../android-apx/docs/ADX-SPEC.md` — read it there, don't restate it here. Kladde is a
 *receiver*; senders use `adx-sender`, so Kladde ships no SDK of its own.
 
 What ADX does for us (`adx-receiver`): exported submit service + broadcast, caller identity
@@ -353,7 +353,7 @@ Goal: work on "dumb" storage (plain WebDAV) without a smart server.
   occurrence landing on a paused day or on a day that already has one.
 - ADX store: upsert/delete/tombstone, a new `sub` extends the tracker, a missing target
   tracker is recreated once, locked vault → `AdxBusyException`. Caller identity, consent,
-  rev rule and validation are tested in `../app-adx`; don't duplicate them here. With
+  rev rule and validation are tested in `../android-apx`; don't duplicate them here. With
   option A: calls while locked merge exactly once.
 - Block rules: blocker cancelled → blocked occurrence reappears; blocker moved → block
   moves with it; paused blocker doesn't block; offsets; tag-based rules; manual override on
@@ -368,7 +368,7 @@ Goal: work on "dumb" storage (plain WebDAV) without a smart server.
 ## Commands
 
 JDK 21 is required for every Gradle call (the system default JDK 25 is rejected by
-Gradle 8.13). `../app-adx` must be checked out next to this repo: `settings.gradle.kts`
+Gradle 8.13). `../android-apx` must be checked out next to this repo: `settings.gradle.kts`
 pulls it in with `includeBuild`, so ADX changes are picked up without publishing.
 
 ```bash
@@ -382,7 +382,7 @@ export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
 ```
 
 On the phone (see the `android-device-testing` skill), the debug build has a `cmd` extra,
-read only in `src/debug` (the `src/release` twin returns null). Logs use tag `Kladde`:
+read only in `src/debug` (the `src/release` twin is a no-op). Logs use tag `Kladde`:
 
 ```bash
 adb shell am start -n de.steppicrew.kladde.debug/de.steppicrew.kladde.MainActivity -e cmd lock
@@ -390,7 +390,7 @@ adb shell am start -n de.steppicrew.kladde.debug/de.steppicrew.kladde.MainActivi
 adb logcat -d -s Kladde AdxReceiver
 ```
 
-End-to-end tests against ADX use the sample sender from `../app-adx`
+End-to-end tests against ADX use the sample sender from `../android-apx`
 (`de.steppicrew.adx.sample.sender.debug`, see its CLAUDE.md for its commands).
 
 ## Working agreements for Claude

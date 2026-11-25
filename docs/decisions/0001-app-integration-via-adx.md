@@ -10,7 +10,7 @@ Counter. The original plan was a Kladde-specific integration API: its own AIDL s
 a `<appId>.action.LOG_DATA_POINT` intent, `externalId`-based idempotency, consent per
 calling app and a `diary-sdk` client library.
 
-Meanwhile the owner wrote **ADX — App Data Exchange** (`../app-adx`, spec in
+Meanwhile the owner wrote **ADX — App Data Exchange** (`../android-apx`, spec in
 `docs/ADX-SPEC.md` there). It covers the same ground for all of the owner's apps (beer
 counter, Kladde, a food app): push-only, on-device only, consent per sender → receiver
 bound to package and signing certificate, idempotent by (sender, stream, id) + `rev`,
@@ -23,7 +23,7 @@ version, limits, validation and the rev rule.
   and the CONNECT approval activity in a new module `integration/adx`.
 - The planned `api/` and `sdk/` modules are dropped. Senders use `adx-sender`.
 - During development ADX is included as a Gradle **composite build**
-  (`includeBuild("../app-adx")`); publishing is an open question on the ADX side.
+  (`includeBuild("../android-apx")`); publishing is an open question on the ADX side.
 - Kladde's toolchain follows ADX: AGP 8.13, Gradle 8.13, Kotlin 2.2.20, JDK 21,
   compile/target SDK 37, core library desugaring enabled (required by ADX).
 

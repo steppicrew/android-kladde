@@ -17,7 +17,7 @@ dependencyResolutionManagement {
 rootProject.name = "android-kladde"
 
 // ADX is built from source next to this repo; its artifacts replace the de.steppicrew.adx dependencies.
-includeBuild("../app-adx")
+includeBuild("../android-apx")
 
 include(":app")
 include(":core:model")
