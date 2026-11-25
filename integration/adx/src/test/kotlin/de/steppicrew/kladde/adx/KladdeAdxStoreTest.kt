@@ -1,11 +1,13 @@
 package de.steppicrew.kladde.adx
 
 import androidx.test.core.app.ApplicationProvider
+import de.steppicrew.adx.AdxAttr
 import de.steppicrew.adx.AdxOp
 import de.steppicrew.adx.AdxRevRule
 import de.steppicrew.adx.AdxStatus
 import de.steppicrew.adx.AdxStreamDecision
 import de.steppicrew.adx.AdxStreamProposal
+import de.steppicrew.adx.AdxSub
 import de.steppicrew.adx.receiver.AdxBusyException
 import de.steppicrew.adx.receiver.AdxConsent
 import de.steppicrew.adx.receiver.AdxConsentState
@@ -45,7 +47,14 @@ class KladdeAdxStoreTest {
     private val store = KladdeAdxStore(vault, trackers, points, labels, { Instant.EPOCH }) { newLabels += it }
 
     private val proposal =
-        AdxStreamProposal("drinks.beer", "Beer", "counter", "count", listOf("Pils"), listOf("intake.volume_ml", "intake.abv_pct"))
+        AdxStreamProposal(
+            "drinks.beer",
+            "Beer",
+            "counter",
+            "count",
+            listOf(AdxSub("Pils")),
+            listOf(AdxAttr("intake.volume_ml"), AdxAttr("intake.abv_pct")),
+        )
     private val sender = AdxConsent("beer.app", "cert", "Beer Counter", AdxConsentState.APPROVED, emptyMap())
     private val grant = AdxStreamGrant(proposal, AdxStreamDecision.ACCEPTED, "tracker-1")
 

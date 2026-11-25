@@ -63,7 +63,7 @@ class KladdeAdxStore(
                     key = key,
                     status = SubTypeLabelStatus.OPEN,
                     createdAt = clock(),
-                    attrKeys = stream.proposal.attrs,
+                    attrKeys = stream.proposal.attrKeys,
                     sourcePackage = sender.packageName,
                 )
             labels.recordIfNew(label)?.let { onNewLabel(NewLabel(it, tracker.name, sender.label)) }

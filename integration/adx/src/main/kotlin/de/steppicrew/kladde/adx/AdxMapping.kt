@@ -43,7 +43,7 @@ internal object AdxMapping {
             type = trackerType(proposal.kind) ?: TrackerType.NUMBER,
             unit = proposal.unit,
             createdAt = now,
-            subTypes = proposal.subs,
+            subTypes = proposal.subKeys,
             scaleMin = proposal.min,
             scaleMax = proposal.max,
             source = TrackerSource(packageName, proposal.key),
