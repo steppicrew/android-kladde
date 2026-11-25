@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tells the debug build apart from a real install on the home screen and in sender pickers. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <application
+        android:label="[D] Kladde"
+        tools:replace="android:label" />
+</manifest>
