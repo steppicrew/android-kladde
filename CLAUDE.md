@@ -345,6 +345,16 @@ Privacy policy (linked from Play): https://steppicrew.github.io/android-kladde/
   crash reporting / ads, data only in app-private storage, cloud backup off
   (`allowBackup="false"`), ADX senders write-only and approved per app + cert. Adding
   sync, export, a revoke screen or at-rest encryption means updating it.
+- Play Console declarations must match the shipped build — **remind the owner to update
+  them in the same release as the behaviour change:**
+  - *App access* ("Zugriff auf die App") is **Nein** (nothing restricted). The release that
+    ships the vault lock / biometric unlock must switch it to **Ja** with reviewer
+    instructions: no account, create a vault with any passphrase, biometrics optional,
+    passphrase/device PIN always unlocks. So biometrics must never be the only way in.
+  - *Data safety* ("Datenerhebung und Sicherheit") is **Nein** (no data collected — nothing
+    leaves the device). The release that adds sync (WebDAV or hosted) must re-check it
+    against Google's current definition of "collected", even for E2EE data; the hosted
+    service most likely needs **Ja**. User-initiated share-sheet export should not change it.
 - A new language needs a complete `values-<lang>/privacy.xml` and an entry in the
   script's `LANGUAGES`; the script refuses partial translations.
 ## Coding conventions
