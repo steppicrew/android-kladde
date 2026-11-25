@@ -108,7 +108,7 @@ enum class OccurrenceStatus {
     DONE,
     SKIPPED,
 
-    /** A past day of a checkable routine with no answer. */
+    /** A past day of a checkable routine with no answer: shown as skipped, but can still be done. */
     MISSED,
 
     /** An event that isn't ticked off: it simply takes place. */

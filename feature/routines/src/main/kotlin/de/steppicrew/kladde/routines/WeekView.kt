@@ -207,13 +207,17 @@ internal fun rowActions(
 ): List<RowAction> {
     val future = occurrence.date.isAfter(today)
     return when (occurrence.status) {
-        OccurrenceStatus.OPEN, OccurrenceStatus.MISSED ->
+        OccurrenceStatus.OPEN ->
             when {
                 !future -> listOf(RowAction.DONE, RowAction.SKIP)
                 occurrence.isExtra -> emptyList()
                 else -> listOf(RowAction.CANCEL_ONCE)
             }
-        OccurrenceStatus.DONE, OccurrenceStatus.SKIPPED -> listOf(RowAction.UNDO)
+        // A past day not ticked off counts as skipped, and can still be done later; so can one
+        // skipped on purpose once its day is over.
+        OccurrenceStatus.MISSED -> listOf(RowAction.DONE)
+        OccurrenceStatus.SKIPPED -> if (occurrence.date.isBefore(today)) listOf(RowAction.DONE) else listOf(RowAction.UNDO)
+        OccurrenceStatus.DONE -> listOf(RowAction.UNDO)
         OccurrenceStatus.PAUSED -> if (occurrence.routine.checkable && !future) listOf(RowAction.DONE) else emptyList()
         OccurrenceStatus.CANCELLED -> listOf(RowAction.RESTORE)
         OccurrenceStatus.HAPPENS, OccurrenceStatus.BLOCKED -> emptyList()
@@ -249,8 +253,7 @@ private fun statusText(occurrence: Occurrence): String? =
         OccurrenceStatus.BLOCKED -> stringResource(R.string.routines_status_blocked, occurrence.blockedBy.joinToString(", ") { it.title })
         OccurrenceStatus.DONE ->
             occurrence.doneAt?.let { doneAtText(it, occurrence.date) } ?: stringResource(R.string.routines_status_done)
-        OccurrenceStatus.SKIPPED -> stringResource(R.string.routines_status_skipped)
-        OccurrenceStatus.MISSED -> stringResource(R.string.routines_status_missed)
+        OccurrenceStatus.SKIPPED, OccurrenceStatus.MISSED -> stringResource(R.string.routines_status_skipped)
         OccurrenceStatus.CANCELLED -> stringResource(R.string.routines_status_cancelled)
         OccurrenceStatus.PAUSED ->
             occurrence.pausedBy

@@ -163,7 +163,8 @@ RDATE), and schedule changes that apply only from the edited event on (schedule 
   (null `timeZone`, default) or bound to a zone, shown converted with "(+1 day)" while travelling.
   Routines can be in groups ("Arbeit", "Privat"); in a pause of only some routines a group chip
   covers all its routines, also ones that join the group later (`RoutinePause.groups`, DB 14).
-  A picked "Gilt ab" earlier than the current schedule's start moves that start back, even with no
+  A past day not ticked off (`MISSED`, derived) shows as "Ausgelassen" and can still be ticked
+  "Erledigt"; so can a past `SKIPPED` one. A picked "Gilt ab" earlier than the current schedule's start moves that start back, even with no
   other change.
 
 The full design below is the target; the first version is the subset above.

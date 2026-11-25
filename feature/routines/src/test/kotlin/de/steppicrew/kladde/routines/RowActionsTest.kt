@@ -22,9 +22,14 @@ class RowActionsTest {
     ) = rowActions(Occurrence(routine, date, status, isExtra = isExtra), today)
 
     @Test
-    fun `today and before can be done or skipped`() {
+    fun `today can be done or skipped`() {
         assertEquals(listOf(RowAction.DONE, RowAction.SKIP), actions(OccurrenceStatus.OPEN, today))
-        assertEquals(listOf(RowAction.DONE, RowAction.SKIP), actions(OccurrenceStatus.MISSED, today.minusDays(1)))
+    }
+
+    @Test
+    fun `a past day not ticked off counts as skipped and can still be done`() {
+        assertEquals(listOf(RowAction.DONE), actions(OccurrenceStatus.MISSED, today.minusDays(1)))
+        assertEquals(listOf(RowAction.DONE), actions(OccurrenceStatus.SKIPPED, today.minusDays(2)))
     }
 
     @Test
@@ -41,7 +46,8 @@ class RowActionsTest {
     @Test
     fun `done or skipped can be taken back`() {
         assertEquals(listOf(RowAction.UNDO), actions(OccurrenceStatus.DONE, today))
-        assertEquals(listOf(RowAction.UNDO), actions(OccurrenceStatus.SKIPPED, today.minusDays(2)))
+        assertEquals(listOf(RowAction.UNDO), actions(OccurrenceStatus.DONE, today.minusDays(2)))
+        assertEquals(listOf(RowAction.UNDO), actions(OccurrenceStatus.SKIPPED, today))
     }
 
     @Test
