@@ -1,0 +1,11 @@
+naming:
+  FunctionNaming:
+    ignoreAnnotated: ['Composable']
+style:
+  MagicNumber:
+    ignorePropertyDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+  UnusedPrivateMember:
+    ignoreAnnotated: ['Preview']
+  MaxLineLength:
+    maxLineLength: 140
