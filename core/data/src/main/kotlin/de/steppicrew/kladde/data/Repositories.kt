@@ -3,6 +3,7 @@ package de.steppicrew.kladde.data
 import de.steppicrew.kladde.model.BlockRule
 import de.steppicrew.kladde.model.DataPoint
 import de.steppicrew.kladde.model.ExternalSource
+import de.steppicrew.kladde.model.OccurrenceOverride
 import de.steppicrew.kladde.model.Routine
 import de.steppicrew.kladde.model.RoutineCompletion
 import de.steppicrew.kladde.model.SubTypeLabel
@@ -155,10 +156,36 @@ class RoutineRepository(
         db.blockRules().insertRules(blockers.map { BlockRuleEntity(routine.id, it) })
     }
 
-    /** Deletes the routine, what was ticked off for it and every rule it is part of. */
+    fun observeOverrides(): Flow<List<OccurrenceOverride>> =
+        db.overrides().observeAll().map { list ->
+            list.map { OccurrenceOverride(it.routineId, LocalDate.parse(it.originalDate), it.newDate?.let(LocalDate::parse)) }
+        }
+
+    /**
+     * Moves the occurrence planned for [originalDate] to [newDate], or cancels it when that is
+     * null; moving it back to its planned day takes the change back.
+     */
+    fun change(
+        routineId: String,
+        originalDate: LocalDate,
+        newDate: LocalDate?,
+    ) = if (newDate == originalDate) {
+        restore(routineId, originalDate)
+    } else {
+        db.overrides().save(OccurrenceOverrideEntity(routineId, originalDate.toString(), newDate?.toString()))
+    }
+
+    /** Takes back a move or a cancel: the occurrence is on its planned day again. */
+    fun restore(
+        routineId: String,
+        originalDate: LocalDate,
+    ) = db.overrides().delete(routineId, originalDate.toString())
+
+    /** Deletes the routine, what was ticked off for it, its single-day changes and every rule it is part of. */
     fun delete(id: String) =
         db.runInTransaction {
             db.routines().deleteCompletions(id)
+            db.overrides().deleteAllOf(id)
             db.blockRules().deleteRulesWith(id)
             db.routines().delete(id)
         }

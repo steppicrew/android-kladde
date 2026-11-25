@@ -89,6 +89,18 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun `5 to 6 keeps block rules and adds an empty occurrence_overrides table`() {
+        helper.createDatabase(DB, 5).use { db ->
+            db.execSQL("INSERT INTO block_rules (routine_id, blocker_id) VALUES ('r1', 'r2')")
+        }
+
+        helper.runMigrationsAndValidate(DB, 6, true).use { db ->
+            assertEquals(1, db.count("block_rules"))
+            assertEquals(0, db.count("occurrence_overrides"))
+        }
+    }
+
     private fun androidx.sqlite.db.SupportSQLiteDatabase.count(table: String): Int =
         query("SELECT COUNT(*) FROM $table").use { cursor ->
             cursor.moveToFirst()

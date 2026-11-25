@@ -3,6 +3,7 @@ package de.steppicrew.kladde.data
 import androidx.test.core.app.ApplicationProvider
 import de.steppicrew.kladde.model.BlockRule
 import de.steppicrew.kladde.model.CompletionStatus
+import de.steppicrew.kladde.model.OccurrenceOverride
 import de.steppicrew.kladde.model.Recurrence
 import de.steppicrew.kladde.model.Routine
 import de.steppicrew.kladde.model.RoutineCompletion
@@ -101,6 +102,39 @@ class RoutineRepositoryTest {
 
         assertTrue(rules().isEmpty())
         assertEquals(listOf(sport), all())
+    }
+
+    private fun overrides() = runBlocking { routines.observeOverrides().first() }
+
+    @Test
+    fun `an occurrence is moved, cancelled and brought back`() {
+        routines.save(sport)
+        routines.change(sport.id, day, day.plusDays(2))
+        assertEquals(listOf(OccurrenceOverride(sport.id, day, day.plusDays(2))), overrides())
+
+        routines.change(sport.id, day, null)
+        assertEquals(listOf(OccurrenceOverride(sport.id, day, null)), overrides())
+
+        routines.restore(sport.id, day)
+        assertTrue(overrides().isEmpty())
+    }
+
+    @Test
+    fun `moving an occurrence back to its day takes the move back`() {
+        routines.change(sport.id, day, day.plusDays(1))
+        routines.change(sport.id, day, day)
+
+        assertTrue(overrides().isEmpty())
+    }
+
+    @Test
+    fun `deleting a routine deletes its single-day changes`() {
+        routines.save(sport)
+        routines.change(sport.id, day, null)
+
+        routines.delete(sport.id)
+
+        assertTrue(overrides().isEmpty())
     }
 
     @Test

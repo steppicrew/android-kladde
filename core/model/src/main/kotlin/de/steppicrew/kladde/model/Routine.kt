@@ -138,6 +138,9 @@ enum class OccurrenceStatus {
 
     /** Doesn't take place: a routine it gives way to happens that day ([Occurrence.blockedBy]). */
     BLOCKED,
+
+    /** Called off for this one day; listed on its planned day so it can be brought back. */
+    CANCELLED,
 }
 
 data class Occurrence(
@@ -146,7 +149,11 @@ data class Occurrence(
     val status: OccurrenceStatus,
     /** For [OccurrenceStatus.BLOCKED]: the routines that take its place that day. */
     val blockedBy: List<Routine> = emptyList(),
-)
+    /** The day it was planned for; differs from [date] when it was moved. Answers are keyed by it. */
+    val originalDate: LocalDate = date,
+) {
+    val isMoved: Boolean get() = originalDate != date
+}
 
 /** "[routineId] doesn't take place on days when [blockerId] does." */
 data class BlockRule(
@@ -172,65 +179,4 @@ fun wouldCycle(
         if (seen.add(next)) queue.addAll(blockersOf[next].orEmpty())
     }
     return false
-}
-
-/**
- * What is planned on which day, from the routines, what was ticked off and the block rules.
- * Blocking is worked out per day, never stored: only a blocker that takes place that day blocks.
- */
-class RoutinePlan(
-    private val routines: List<Routine>,
-    completions: List<RoutineCompletion>,
-    rules: List<BlockRule> = emptyList(),
-) {
-    private val completions = completions.associateBy { it.routineId to it.date }
-    private val byId = routines.associateBy { it.id }
-    private val blockersOf = rules.groupBy({ it.routineId }, { it.blockerId })
-
-    /** The routines that block [routine] on [date]; [path] guards against a loop in stored rules. */
-    private fun blockers(
-        routine: Routine,
-        date: LocalDate,
-        path: Set<String> = emptySet(),
-    ): List<Routine> =
-        blockersOf[routine.id]
-            .orEmpty()
-            .mapNotNull(byId::get)
-            .filter { it.id !in path && takesPlace(it, date, path + routine.id) }
-
-    private fun takesPlace(
-        routine: Routine,
-        date: LocalDate,
-        path: Set<String>,
-    ): Boolean = routine.occursOn(date) && blockers(routine, date, path).isEmpty()
-
-    /** The occurrences on [date] in time order, untimed ones first; [today] decides what counts as missed. */
-    fun day(
-        date: LocalDate,
-        today: LocalDate,
-    ): List<Occurrence> =
-        routines
-            .filter { it.occursOn(date) }
-            .sortedWith(compareBy(nullsFirst()) { routine: Routine -> routine.time }.thenBy { it.title.lowercase() })
-            .map { routine -> occurrence(routine, date, today) }
-
-    private fun occurrence(
-        routine: Routine,
-        date: LocalDate,
-        today: LocalDate,
-    ): Occurrence {
-        // What the user ticked off stands, even if a blocker was added to that day later.
-        val answer = completions[routine.id to date]?.status
-        val blockedBy = if (answer == null) blockers(routine, date) else emptyList()
-        val status =
-            when {
-                blockedBy.isNotEmpty() -> OccurrenceStatus.BLOCKED
-                !routine.checkable -> OccurrenceStatus.HAPPENS
-                answer == CompletionStatus.DONE -> OccurrenceStatus.DONE
-                answer == CompletionStatus.SKIPPED -> OccurrenceStatus.SKIPPED
-                date.isBefore(today) -> OccurrenceStatus.MISSED
-                else -> OccurrenceStatus.OPEN
-            }
-        return Occurrence(routine, date, status, blockedBy)
-    }
 }

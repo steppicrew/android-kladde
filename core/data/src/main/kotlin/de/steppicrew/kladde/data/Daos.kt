@@ -115,3 +115,21 @@ internal interface BlockRuleDao {
     @Query("DELETE FROM block_rules WHERE routine_id = :id OR blocker_id = :id")
     fun deleteRulesWith(id: String)
 }
+
+@Dao
+internal interface OccurrenceOverrideDao {
+    @Query("SELECT * FROM occurrence_overrides")
+    fun observeAll(): Flow<List<OccurrenceOverrideEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun save(change: OccurrenceOverrideEntity)
+
+    @Query("DELETE FROM occurrence_overrides WHERE routine_id = :routineId AND original_date = :originalDate")
+    fun delete(
+        routineId: String,
+        originalDate: String,
+    )
+
+    @Query("DELETE FROM occurrence_overrides WHERE routine_id = :routineId")
+    fun deleteAllOf(routineId: String)
+}

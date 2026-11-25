@@ -33,4 +33,11 @@
     <string name="routines_status_blocked">Not today: %1$s</string>
     <string name="routines_blockers">Not on days with …</string>
     <string name="routines_blockers_hint">Drops out when one of these takes place that day</string>
+    <string name="routines_status_cancelled">Cancelled this time</string>
+    <string name="routines_moved_from">Moved from %1$s</string>
+    <string name="routines_move">Move this one to …</string>
+    <string name="routines_cancel_once">Cancel just this one</string>
+    <string name="routines_restore">Back to its planned day</string>
+    <string name="routines_edit">Change the routine</string>
+    <string name="routines_close">Close</string>
 </resources>

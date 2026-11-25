@@ -70,7 +70,12 @@ fun RoutinesScreen(repository: RoutineRepository) {
     val to = today.plusDays(DAYS_AHEAD)
     val routines by repository.observeAll().collectAsStateWithLifecycle(emptyList())
     val rules by repository.observeRules().collectAsStateWithLifecycle(emptyList())
-    val completions by remember(from, to) { repository.observeCompletions(from, to) }.collectAsStateWithLifecycle(emptyList())
+    // Answers are kept under the planned day, which for a moved occurrence can lie outside the week.
+    val completions by remember(from, to) {
+        repository.observeCompletions(from.minusYears(1), to.plusYears(1))
+    }.collectAsStateWithLifecycle(emptyList())
+    val overrides by repository.observeOverrides().collectAsStateWithLifecycle(emptyList())
+    var menuFor by remember { mutableStateOf<Occurrence?>(null) }
     val scope = rememberCoroutineScope()
 
     fun io(block: () -> Unit) = scope.launch(Dispatchers.IO) { block() }
@@ -79,27 +84,10 @@ fun RoutinesScreen(repository: RoutineRepository) {
     var editing by rememberSaveable { mutableStateOf<String?>(null) }
     val current = editing
     if (current != null) {
-        val routine = routines.firstOrNull { it.id == current }
-        RoutineEditor(
-            initial = routine?.let { RoutineDraft.of(it, rules) } ?: RoutineDraft(),
-            isNew = routine == null,
-            // What it can give way to: the others, bar those that would close a loop.
-            blockerChoices = routines.filter { it.id != current && !wouldCycle(current, it.id, rules) },
-            onSave = { draft ->
-                draft.toRoutine(Ids.newId(), LocalDate.now(), Instant.now(), routine)?.let { saved ->
-                    io { repository.save(saved, draft.blockers.filterTo(HashSet()) { id -> routines.any { it.id == id } }) }
-                }
-                editing = null
-            },
-            onDelete = {
-                routine?.let { io { repository.delete(it.id) } }
-                editing = null
-            },
-            onCancel = { editing = null },
-        )
+        EditRoutine(current, routines, rules, repository, ::io) { editing = null }
         return
     }
-    val plan = RoutinePlan(routines, completions, rules)
+    val plan = RoutinePlan(routines, completions, rules, overrides)
     WeekView(
         days = generateSequence(from) { it.plusDays(1) }.takeWhile { !it.isAfter(to) }.map { it to plan.day(it, today) }.toList(),
         today = today,
@@ -107,17 +95,59 @@ fun RoutinesScreen(repository: RoutineRepository) {
         onAnswer = { occurrence, status ->
             io {
                 repository.complete(
-                    RoutineCompletion(occurrence.routine.id, occurrence.date, status, Instant.now(), ZoneId.systemDefault()),
+                    RoutineCompletion(occurrence.routine.id, occurrence.originalDate, status, Instant.now(), ZoneId.systemDefault()),
                 )
             }
         },
-        onReopen = { occurrence -> io { repository.reopen(occurrence.routine.id, occurrence.date) } },
-        onEdit = { editing = it.id },
+        onReopen = { occurrence -> io { repository.reopen(occurrence.routine.id, occurrence.originalDate) } },
+        onOpen = { menuFor = it },
         onAdd = { editing = "" },
     )
+    menuFor?.let { occurrence ->
+        OccurrenceMenu(
+            occurrence = occurrence,
+            onMove = { newDate -> io { repository.change(occurrence.routine.id, occurrence.originalDate, newDate) } },
+            onCancel = { io { repository.change(occurrence.routine.id, occurrence.originalDate, null) } },
+            onRestore = { io { repository.restore(occurrence.routine.id, occurrence.originalDate) } },
+            onEdit = { editing = occurrence.routine.id },
+            onDismiss = { menuFor = null },
+        )
+    }
 }
 
 private const val MINUTE_MS = 60_000L
+
+/** The form for the routine [id] ("" for a new one), saved with what it gives way to. */
+@Composable
+private fun EditRoutine(
+    id: String,
+    routines: List<Routine>,
+    rules: List<BlockRule>,
+    repository: RoutineRepository,
+    // The screen's scope: this form's own would end, and could cancel the save, as it closes.
+    io: (() -> Unit) -> Unit,
+    onDone: () -> Unit,
+) {
+    val routine = routines.firstOrNull { it.id == id }
+    RoutineEditor(
+        initial = routine?.let { RoutineDraft.of(it, rules) } ?: RoutineDraft(),
+        isNew = routine == null,
+        // What it can give way to: the others, bar those that would close a loop.
+        blockerChoices = routines.filter { it.id != id && !wouldCycle(id, it.id, rules) },
+        onSave = { draft ->
+            draft.toRoutine(Ids.newId(), LocalDate.now(), Instant.now(), routine)?.let { saved ->
+                val blockers = draft.blockers.filterTo(HashSet()) { blocker -> routines.any { it.id == blocker } }
+                io { repository.save(saved, blockers) }
+            }
+            onDone()
+        },
+        onDelete = {
+            routine?.let { io { repository.delete(it.id) } }
+            onDone()
+        },
+        onCancel = onDone,
+    )
+}
 
 @Composable
 internal fun WeekView(
@@ -126,7 +156,7 @@ internal fun WeekView(
     hasRoutines: Boolean,
     onAnswer: (Occurrence, CompletionStatus) -> Unit,
     onReopen: (Occurrence) -> Unit,
-    onEdit: (Routine) -> Unit,
+    onOpen: (Occurrence) -> Unit,
     onAdd: () -> Unit,
 ) {
     Box(Modifier.fillMaxSize()) {
@@ -146,7 +176,7 @@ internal fun WeekView(
                         }
                     }
                     items(occurrences, key = { "$date-${it.routine.id}" }) { occurrence ->
-                        OccurrenceRow(occurrence, onAnswer, onReopen, onEdit)
+                        OccurrenceRow(occurrence, onAnswer, onReopen, onOpen)
                     }
                     item(key = "$date-divider") { HorizontalDivider(Modifier.padding(top = 8.dp)) }
                 }
@@ -188,12 +218,12 @@ private fun OccurrenceRow(
     occurrence: Occurrence,
     onAnswer: (Occurrence, CompletionStatus) -> Unit,
     onReopen: (Occurrence) -> Unit,
-    onEdit: (Routine) -> Unit,
+    onOpen: (Occurrence) -> Unit,
 ) {
     val routine = occurrence.routine
     Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-        val blocked = occurrence.status == OccurrenceStatus.BLOCKED
-        Column(Modifier.weight(1f).clickable { onEdit(routine) }.padding(vertical = 6.dp)) {
+        val blocked = occurrence.status == OccurrenceStatus.BLOCKED || occurrence.status == OccurrenceStatus.CANCELLED
+        Column(Modifier.weight(1f).clickable { onOpen(occurrence) }.padding(vertical = 6.dp)) {
             val time = routine.time?.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
             Text(
                 listOfNotNull(time, routine.title).joinToString("  "),
@@ -202,6 +232,15 @@ private fun OccurrenceRow(
                 textDecoration = if (blocked) TextDecoration.LineThrough else null,
             )
             statusText(occurrence)?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            if (occurrence.isMoved) {
+                Text(
+                    stringResource(
+                        R.string.routines_moved_from,
+                        occurrence.originalDate.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)),
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
         }
         when (occurrence.status) {
             OccurrenceStatus.OPEN, OccurrenceStatus.MISSED -> {
@@ -210,7 +249,7 @@ private fun OccurrenceRow(
             }
             OccurrenceStatus.DONE, OccurrenceStatus.SKIPPED ->
                 TextButton(onClick = { onReopen(occurrence) }) { Text(stringResource(R.string.routines_undo)) }
-            OccurrenceStatus.HAPPENS, OccurrenceStatus.BLOCKED -> Unit
+            OccurrenceStatus.HAPPENS, OccurrenceStatus.BLOCKED, OccurrenceStatus.CANCELLED -> Unit
         }
     }
 }
@@ -222,6 +261,7 @@ private fun statusText(occurrence: Occurrence): String? =
         OccurrenceStatus.DONE -> stringResource(R.string.routines_status_done)
         OccurrenceStatus.SKIPPED -> stringResource(R.string.routines_status_skipped)
         OccurrenceStatus.MISSED -> stringResource(R.string.routines_status_missed)
+        OccurrenceStatus.CANCELLED -> stringResource(R.string.routines_status_cancelled)
         OccurrenceStatus.OPEN, OccurrenceStatus.HAPPENS -> null
     }
 
@@ -243,7 +283,7 @@ private fun WeekViewPreview() {
             hasRoutines = true,
             onAnswer = { _, _ -> },
             onReopen = {},
-            onEdit = {},
+            onOpen = {},
             onAdd = {},
         )
     }

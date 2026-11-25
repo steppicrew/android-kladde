@@ -107,3 +107,11 @@ internal data class BlockRuleEntity(
     @ColumnInfo(name = "routine_id") val routineId: String,
     @ColumnInfo(name = "blocker_id") val blockerId: String,
 )
+
+/** One occurrence moved to new_date, or cancelled when that is null; dates are ISO yyyy-MM-dd. */
+@Entity(tableName = "occurrence_overrides", primaryKeys = ["routine_id", "original_date"])
+internal data class OccurrenceOverrideEntity(
+    @ColumnInfo(name = "routine_id") val routineId: String,
+    @ColumnInfo(name = "original_date") val originalDate: String,
+    @ColumnInfo(name = "new_date") val newDate: String?,
+)

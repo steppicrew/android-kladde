@@ -33,4 +33,11 @@
     <string name="routines_status_blocked">Entfällt wegen %1$s</string>
     <string name="routines_blockers">Nicht an Tagen mit …</string>
     <string name="routines_blockers_hint">Entfällt, wenn an dem Tag eins davon stattfindet</string>
+    <string name="routines_status_cancelled">Diesmal abgesagt</string>
+    <string name="routines_moved_from">Verschoben vom %1$s</string>
+    <string name="routines_move">Diesmal verschieben auf …</string>
+    <string name="routines_cancel_once">Diesmal absagen</string>
+    <string name="routines_restore">Wieder wie geplant</string>
+    <string name="routines_edit">Routine ändern</string>
+    <string name="routines_close">Schließen</string>
 </resources>

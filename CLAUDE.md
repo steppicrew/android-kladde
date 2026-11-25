@@ -132,7 +132,7 @@ usable on the phone before the next:**
 2. Conditions: "not on days with …" — a routine drops out on days another routine happens
    (block rules below, `SAME_DAY`, `DROP` only). **Built.**
 3. Single days: move one occurrence to another date, or cancel it ("Diesmal verschieben auf…",
-   "Diesmal absagen"). Conditions follow the moved/cancelled dates automatically.
+   "Diesmal absagen"). Conditions follow the moved/cancelled dates automatically. **Built.**
 4. Vacations: a pause from–until for **all routines by default**, or only chosen ones.
 5. Then reminders (notifications with Erledigt / Auslassen). **Not in the first version.**
 
