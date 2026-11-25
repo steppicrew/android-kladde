@@ -77,7 +77,8 @@ feature/trackers/    Tracker definitions, data entry, quick-add widgets
 feature/routines/    Planned tasks, recurrence, reminders, done/skip, calendar mirror
 feature/insights/    Graphs, overlays, correlations
 feature/export/      CSV/JSON/PDF export
-integration/adx/     ADX receiver: AdxStore on top of core/data, CONNECT approval screen
+integration/adx/     ADX receiver: AdxStore on top of core/data, CONNECT approval screen,
+                     new-label notifications and screen
 docs/                Architecture notes, crypto spec, ADRs
 ```
 
@@ -241,6 +242,12 @@ What Kladde does (`integration/adx`):
 - `ConnectActivity` — the approval screen: per proposed stream, create a new tracker,
   map to an existing tracker of the same type, or decline. `AdxStreamGrant.target` holds
   the Kladde tracker UUID.
+- **New labels** (`docs/decisions/0002-unknown-labels-from-other-apps.md`): the first entry
+  with a `sub` the tracker has no `SubTypeLabel` record of opens one and posts a
+  notification (`LabelNotifications`, Ignore via `LabelActionReceiver`); `LabelsActivity`
+  asks for a display name and count-only vs. default values for the stream's attrs. The
+  main screen shows a counter while labels are open. Sender values always beat a label's
+  defaults. The notification permission is asked for on Allow in `ConnectActivity`.
 - Revoking a sender: `AdxReceiver.revoke(packageName)`.
 
 **Locked vault — current behaviour (option B):** while the vault is locked, every
@@ -344,7 +351,8 @@ Privacy policy (linked from Play): https://steppicrew.github.io/android-kladde/
 - Every sentence is a claim about current behaviour — **change the text in the same commit
   as the behaviour.** It currently promises: no `INTERNET` permission, no analytics /
   crash reporting / ads, data only in app-private storage, cloud backup off
-  (`allowBackup="false"`), ADX senders write-only and approved per app + cert. Adding
+  (`allowBackup="false"`), ADX senders write-only and approved per app + cert, new entry
+  types asked about in the app and by a notification without details on the lock screen. Adding
   sync, export, a revoke screen or at-rest encryption means updating it.
 - Play Console declarations must match the shipped build — **remind the owner to update
   them in the same release as the behaviour change:**

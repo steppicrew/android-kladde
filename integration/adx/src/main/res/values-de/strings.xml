@@ -11,4 +11,48 @@
     <string name="adx_connect_cancel">Abbrechen</string>
     <string name="adx_connect_locked">Entsperre zuerst Kladde und versuche es dann erneut.</string>
     <string name="adx_connect_close">Schließen</string>
+    <string name="adx_connect_labels_note">Sendet sie eine Eintragsart, die Kladde noch nicht kennt, fragt Kladde dich, was das ist, per Benachrichtigung, wenn du sie erlaubst.</string>
+
+    <!-- Neue Eintragsarten (Labels wie „beerSmall“); siehe docs/decisions/0002. -->
+    <string name="adx_labels_title">Neue Eintragsarten</string>
+    <string name="adx_labels_explainer">Eine andere App hat sie zum ersten Mal gesendet. Gib ihnen einen Namen und sag, was sie sind, oder ignoriere sie; gezählt werden sie so oder so.</string>
+    <string name="adx_labels_sent_as">Gesendet als „%1$s“</string>
+    <string name="adx_labels_from">%1$s · von %2$s</string>
+    <string name="adx_labels_name">Name</string>
+    <string name="adx_labels_kind_alcoholic">Alkoholisch</string>
+    <string name="adx_labels_kind_non_alcoholic">Alkoholfrei</string>
+    <string name="adx_labels_kind_values">Mit Werten</string>
+    <string name="adx_labels_kind_count_only">Nur zählen</string>
+    <string name="adx_labels_values_hint">Gilt für Einträge, die keine eigenen Werte mitbringen.</string>
+    <string name="adx_labels_not_a_number">Gib eine Zahl ein</string>
+    <string name="adx_labels_save">Speichern</string>
+    <string name="adx_labels_ignore">Ignorieren</string>
+    <string name="adx_labels_done">Nichts mehr zu prüfen.</string>
+    <string name="adx_labels_close">Schließen</string>
+    <string name="adx_labels_locked">Entsperre zuerst Kladde.</string>
+    <plurals name="adx_labels_badge">
+        <item quantity="one">%d neue Eintragsart zu prüfen</item>
+        <item quantity="other">%d neue Eintragsarten zu prüfen</item>
+    </plurals>
+
+    <string name="adx_attr_volume_ml">Menge (ml)</string>
+    <string name="adx_attr_abv_pct" formatted="false">Alkohol (% vol)</string>
+    <string name="adx_attr_alcohol_g">Reiner Alkohol (g)</string>
+    <string name="adx_attr_kcal">Energie (kcal)</string>
+    <string name="adx_attr_caffeine_mg">Koffein (mg)</string>
+    <string name="adx_attr_protein_g">Eiweiß (g)</string>
+    <string name="adx_attr_carbs_g">Kohlenhydrate (g)</string>
+    <string name="adx_attr_fat_g">Fett (g)</string>
+    <string name="adx_attr_fibre_g">Ballaststoffe (g)</string>
+
+    <string name="adx_label_channel">Neue Eintragsarten</string>
+    <string name="adx_label_channel_description">Wenn eine andere App eine Eintragsart sendet, die Kladde noch nicht kennt</string>
+    <string name="adx_label_notification_title">Neue Eintragsart von %1$s</string>
+    <string name="adx_label_notification_text">„%1$s“ in %2$s: was ist das?</string>
+    <string name="adx_label_notification_public">Neue Eintragsart zu prüfen</string>
+    <string name="adx_label_specify">Festlegen</string>
+    <plurals name="adx_label_summary">
+        <item quantity="one">%d neue Eintragsart</item>
+        <item quantity="other">%d neue Eintragsarten</item>
+    </plurals>
 </resources>

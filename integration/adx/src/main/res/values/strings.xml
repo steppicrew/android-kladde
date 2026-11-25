@@ -11,4 +11,48 @@
     <string name="adx_connect_cancel">Cancel</string>
     <string name="adx_connect_locked">Unlock Kladde first, then try again.</string>
     <string name="adx_connect_close">Close</string>
+    <string name="adx_connect_labels_note">If it sends an entry type Kladde doesn\'t know yet, Kladde asks you what it is, with a notification if you allow them.</string>
+
+    <!-- New entry types (labels such as "beerSmall"); see docs/decisions/0002. -->
+    <string name="adx_labels_title">New entry types</string>
+    <string name="adx_labels_explainer">Another app sent these for the first time. Give them a name and say what they are, or ignore them; they are counted either way.</string>
+    <string name="adx_labels_sent_as">Sent as \"%1$s\"</string>
+    <string name="adx_labels_from">%1$s · from %2$s</string>
+    <string name="adx_labels_name">Name</string>
+    <string name="adx_labels_kind_alcoholic">Alcoholic</string>
+    <string name="adx_labels_kind_non_alcoholic">Non-alcoholic</string>
+    <string name="adx_labels_kind_values">With values</string>
+    <string name="adx_labels_kind_count_only">Just count</string>
+    <string name="adx_labels_values_hint">Used for entries that come without values of their own.</string>
+    <string name="adx_labels_not_a_number">Enter a number</string>
+    <string name="adx_labels_save">Save</string>
+    <string name="adx_labels_ignore">Ignore</string>
+    <string name="adx_labels_done">Nothing left to check.</string>
+    <string name="adx_labels_close">Close</string>
+    <string name="adx_labels_locked">Unlock Kladde first.</string>
+    <plurals name="adx_labels_badge">
+        <item quantity="one">%d new entry type to check</item>
+        <item quantity="other">%d new entry types to check</item>
+    </plurals>
+
+    <string name="adx_attr_volume_ml">Volume (ml)</string>
+    <string name="adx_attr_abv_pct" formatted="false">Alcohol (% vol)</string>
+    <string name="adx_attr_alcohol_g">Pure alcohol (g)</string>
+    <string name="adx_attr_kcal">Energy (kcal)</string>
+    <string name="adx_attr_caffeine_mg">Caffeine (mg)</string>
+    <string name="adx_attr_protein_g">Protein (g)</string>
+    <string name="adx_attr_carbs_g">Carbohydrates (g)</string>
+    <string name="adx_attr_fat_g">Fat (g)</string>
+    <string name="adx_attr_fibre_g">Fibre (g)</string>
+
+    <string name="adx_label_channel">New entry types</string>
+    <string name="adx_label_channel_description">When another app sends an entry type Kladde doesn\'t know yet</string>
+    <string name="adx_label_notification_title">New entry type from %1$s</string>
+    <string name="adx_label_notification_text">\"%1$s\" in %2$s: what is it?</string>
+    <string name="adx_label_notification_public">New entry type to check</string>
+    <string name="adx_label_specify">Specify</string>
+    <plurals name="adx_label_summary">
+        <item quantity="one">%d new entry type</item>
+        <item quantity="other">%d new entry types</item>
+    </plurals>
 </resources>

@@ -1,8 +1,12 @@
 package de.steppicrew.kladde.adx
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -56,6 +60,16 @@ internal sealed interface StreamChoice {
 
 /** The ADX approval screen: per proposed stream, a new tracker, an existing one, or no. */
 class ConnectActivity : ComponentActivity() {
+    /** The choices waiting for the answer to the notification permission. */
+    private var pending: (() -> Unit)? = null
+
+    private val askNotifications =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+            // Allowed either way: without notifications the app's counter still shows new labels.
+            pending?.invoke()
+            pending = null
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val session = AdxConnectSession.from(this) ?: return
@@ -77,7 +91,7 @@ class ConnectActivity : ComponentActivity() {
                                 proposals = session.request.streams,
                                 trackers = known,
                                 initial = initialChoices(session, known),
-                                onAllow = { choices -> approve(host, session, choices) },
+                                onAllow = { choices -> withNotificationPermission { approve(host, session, choices) } },
                                 onCancel = session::cancel,
                             )
                         }
@@ -103,6 +117,20 @@ class ConnectActivity : ComponentActivity() {
                     else -> StreamChoice.NewTracker
                 }
         }
+
+    /**
+     * Asks for the notification permission first, the moment notifications about the
+     * sender's new labels become possible (docs/decisions/0002), then runs [then].
+     */
+    private fun withNotificationPermission(then: () -> Unit) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        ) {
+            return then()
+        }
+        pending = then
+        askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
 
     private fun approve(
         host: KladdeAdxHost,
@@ -151,6 +179,7 @@ internal fun ConnectScreen(
         ) {
             Text(stringResource(R.string.adx_connect_title, senderLabel), style = MaterialTheme.typography.headlineSmall)
             Text(stringResource(R.string.adx_connect_explainer), style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.adx_connect_labels_note), style = MaterialTheme.typography.bodyMedium)
             for (proposal in proposals) {
                 StreamOptions(
                     proposal = proposal,
@@ -197,7 +226,7 @@ private fun StreamOptions(
 }
 
 @Composable
-private fun Option(
+internal fun Option(
     label: String,
     selected: Boolean,
     onSelect: () -> Unit,

@@ -4,6 +4,7 @@ import android.app.Application
 import de.steppicrew.adx.receiver.AdxReceiver
 import de.steppicrew.kladde.adx.KladdeAdxHost
 import de.steppicrew.kladde.adx.KladdeAdxStore
+import de.steppicrew.kladde.adx.LabelNotifications
 import de.steppicrew.kladde.data.DataPointRepository
 import de.steppicrew.kladde.data.KladdeDatabase
 import de.steppicrew.kladde.data.SubTypeLabelRepository
@@ -18,10 +19,14 @@ class KladdeApp :
     override val vaultLock get() = vault
     override val trackerRepository by lazy { TrackerRepository(database) }
     val dataPointRepository by lazy { DataPointRepository(database) }
-    val subTypeLabelRepository by lazy { SubTypeLabelRepository(database) }
+    override val subTypeLabelRepository by lazy { SubTypeLabelRepository(database) }
 
     override fun onCreate() {
         super.onCreate()
-        AdxReceiver.init(this, KladdeAdxStore(vault, trackerRepository, dataPointRepository, subTypeLabelRepository))
+        val labelNotifications = LabelNotifications(this)
+        AdxReceiver.init(
+            this,
+            KladdeAdxStore(vault, trackerRepository, dataPointRepository, subTypeLabelRepository, onNewLabel = labelNotifications::show),
+        )
     }
 }

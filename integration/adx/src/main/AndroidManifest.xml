@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Notifications about new entry types (docs/decisions/0002); asked for when a sender is allowed. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application>
         <!-- The ADX approval screen; senders discover Kladde through this filter. -->
         <activity
@@ -11,5 +14,16 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <!-- New entry types, from a notification or the main screen's counter. -->
+        <activity
+            android:name=".LabelsActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
+
+        <receiver
+            android:name=".LabelActionReceiver"
+            android:exported="false" />
     </application>
 </manifest>
