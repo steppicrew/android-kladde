@@ -137,7 +137,9 @@ usable on the phone before the next:**
 5. Then reminders (notifications with Erledigt / Auslassen). **Not in the first version.**
 
 Added at the owner's request after step 4 (**built**): monthly schedules ("1st and 3rd Monday",
-"last Friday", "on the 1st and 15th"), extra one-off days ("Rüdersdorf this Friday too", an
+"last Friday", "on the 1st and 15th"), yearly spans ("1–12 December"; within one month a plain
+`FREQ=YEARLY;BYMONTH;BYMONTHDAY` RRULE, across months `X-KLADDE-SPAN=MMDD/MMDD`, as RRULE has no
+form for it; 29 February can't be an end), extra one-off days ("Rüdersdorf this Friday too", an
 RDATE), and schedule changes that apply only from the edited event on (schedule versions).
 
 - **One kind of item** for tasks and events: "Sport" and "Rüdersdorf" are both routines;

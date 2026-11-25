@@ -114,6 +114,7 @@ private fun Repeat.label(): Int =
         Repeat.EVERY_N_DAYS -> R.string.routines_every_n_days
         Repeat.MONTHLY_WEEKDAYS -> R.string.routines_monthly_weekdays
         Repeat.MONTHLY_DAYS -> R.string.routines_monthly_days
+        Repeat.YEARLY -> R.string.routines_yearly
     }
 
 /** Keeps a draft across rotation and process death as plain values. */
@@ -133,6 +134,8 @@ private val DraftSaver =
                 it.ignoresPauses,
                 it.timeZone,
                 it.groups.toList(),
+                it.yearFrom?.toString(),
+                it.yearUntil?.toString(),
             )
         },
         restore = { values ->
@@ -150,6 +153,8 @@ private val DraftSaver =
                 ignoresPauses = values[9] as Boolean,
                 timeZone = values[10] as String?,
                 groups = (values[11] as List<String>).toSet(),
+                yearFrom = (values[12] as String?)?.let(java.time.MonthDay::parse),
+                yearUntil = (values[13] as String?)?.let(java.time.MonthDay::parse),
             )
         },
     )
@@ -210,6 +215,7 @@ private fun RepeatFields(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                 )
+            Repeat.YEARLY -> YearlyFields(draft, onChange)
             Repeat.EVERY_DAY -> Unit
         }
     }

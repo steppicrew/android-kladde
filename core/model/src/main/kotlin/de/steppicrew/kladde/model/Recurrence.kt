@@ -2,6 +2,8 @@ package de.steppicrew.kladde.model
 
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.Month
+import java.time.MonthDay
 
 /** A weekday's place in its month: the [n]th (1–4) or, for -1, the last [day] of the month. */
 data class NthWeekday(
@@ -28,7 +30,7 @@ data class NthWeekday(
 /**
  * When a routine happens. Stored as an RFC 5545 RRULE ([toRrule]); only the forms the UI offers
  * are read back: every day, chosen weekdays, every N days, chosen weekdays of the month ("1st
- * and 3rd Monday"), chosen days of the month.
+ * and 3rd Monday"), chosen days of the month, and a span of days every year.
  */
 sealed interface Recurrence {
     data object Daily : Recurrence
@@ -76,6 +78,39 @@ sealed interface Recurrence {
         }
     }
 
+    /**
+     * Every year from [from] to [until], both included, e.g. 1–12 December; a span past New Year
+     * (28 December – 3 January) wraps. 29 February can't be either end, as most years lack it,
+     * but lies inside a span in leap years.
+     */
+    data class Yearly(
+        val from: MonthDay,
+        val until: MonthDay,
+    ) : Recurrence {
+        init {
+            require(from != LEAP_DAY && until != LEAP_DAY) { "29 February as an end" }
+        }
+
+        fun covers(date: LocalDate): Boolean {
+            val day = MonthDay.from(date)
+            return if (from <= until) day in from..until else day >= from || day <= until
+        }
+
+        /** Within one month: a plain RRULE. Across months RRULE has no form for it, so it gets an X- part. */
+        fun rrule(): String =
+            if (from.month == until.month && from <= until) {
+                "FREQ=YEARLY;BYMONTH=${from.monthValue};BYMONTHDAY=" + (from.dayOfMonth..until.dayOfMonth).joinToString(",")
+            } else {
+                "FREQ=YEARLY;$X_SPAN=${from.code()}/${until.code()}"
+            }
+
+        companion object {
+            private val LEAP_DAY: MonthDay = MonthDay.of(Month.FEBRUARY, 29)
+
+            private fun MonthDay.code() = "%02d%02d".format(monthValue, dayOfMonth)
+        }
+    }
+
     /** Whether [date] is in the pattern; [Routine.occursOn] adds the start date and every N days. */
     fun matches(date: LocalDate): Boolean =
         when (this) {
@@ -83,6 +118,7 @@ sealed interface Recurrence {
             is Weekly -> date.dayOfWeek in days
             is MonthlyByWeekday -> days.any { it.matches(date) }
             is MonthlyByDay -> date.dayOfMonth in days || (MonthlyByDay.LAST_DAY in days && date.dayOfMonth == date.lengthOfMonth())
+            is Yearly -> covers(date)
         }
 
     fun toRrule(): String =
@@ -96,6 +132,7 @@ sealed interface Recurrence {
                         .sortedWith(compareBy({ if (it.n == NthWeekday.LAST) Int.MAX_VALUE else it.n }, { it.day }))
                         .joinToString(",") { "${it.n}${RRULE_DAYS.getValue(it.day)}" }
             is MonthlyByDay -> "FREQ=MONTHLY;BYMONTHDAY=" + days.sortedBy { if (it < 0) Int.MAX_VALUE else it }.joinToString(",")
+            is Yearly -> rrule()
         }
 
     companion object {
@@ -110,7 +147,11 @@ sealed interface Recurrence {
                 DayOfWeek.SUNDAY to "SU",
             )
         private val BY_CODE = RRULE_DAYS.entries.associate { (day, code) -> code to day }
-        private val KNOWN_PARTS = setOf("FREQ", "INTERVAL", "BYDAY", "BYMONTHDAY")
+
+        /** Kladde's own part for a yearly span across months: "MMDD/MMDD". */
+        private const val X_SPAN = "X-KLADDE-SPAN"
+        private val KNOWN_PARTS = setOf("FREQ", "INTERVAL", "BYDAY", "BYMONTHDAY", "BYMONTH", X_SPAN)
+        private val SPAN = Regex("(\\d{4})/(\\d{4})")
         private val NTH_DAY = Regex("([+-]?\\d)?([A-Z]{2})")
 
         /** The recurrence [rule] stands for, or null for a rule outside the supported forms. */
@@ -125,13 +166,54 @@ sealed interface Recurrence {
             if (interval < 1 || !KNOWN_PARTS.containsAll(parts.keys)) return null
             val byDay = parts["BYDAY"]
             val byMonthDay = parts["BYMONTHDAY"]
-            return when (parts["FREQ"]) {
+            return when {
+                parts["FREQ"] == "YEARLY" ->
+                    if (interval == 1 &&
+                        byDay == null
+                    ) {
+                        yearly(parts["BYMONTH"], byMonthDay, parts[X_SPAN])
+                    } else {
+                        null
+                    }
+                // The parts for a yearly span mean nothing to the other frequencies.
+                "BYMONTH" in parts || X_SPAN in parts -> null
+                else -> notYearly(parts["FREQ"], interval, byDay, byMonthDay)
+            }
+        }
+
+        private fun notYearly(
+            freq: String?,
+            interval: Int,
+            byDay: String?,
+            byMonthDay: String?,
+        ): Recurrence? =
+            when (freq) {
                 "DAILY" -> daily(interval, byDay ?: byMonthDay)
                 "WEEKLY" -> if (interval == 1 && byMonthDay == null) weekdays(byDay)?.let(::Weekly) else null
                 "MONTHLY" -> if (interval == 1) monthly(byDay, byMonthDay) else null
                 else -> null
             }
-        }
+
+        /** "MMDD" as a day of the year. */
+        private fun monthDay(code: String): MonthDay = MonthDay.of(code.take(2).toInt(), code.drop(2).toInt())
+
+        /** A span within one month (BYMONTH + consecutive BYMONTHDAY) or across months ([X_SPAN]). */
+        private fun yearly(
+            byMonth: String?,
+            byMonthDay: String?,
+            span: String?,
+        ): Recurrence? =
+            runCatching {
+                if (span != null) {
+                    val (from, until) = SPAN.matchEntire(span)!!.destructured
+                    Yearly(monthDay(from), monthDay(until)).takeIf { byMonth == null && byMonthDay == null }
+                } else {
+                    val month = byMonth!!.toInt()
+                    val days = byMonthDay!!.split(',').map { it.toInt() }
+                    Yearly(MonthDay.of(month, days.first()), MonthDay.of(month, days.last()))
+                        .takeIf { days == (days.first()..days.last()).toList() }
+                }
+            }.getOrNull()
 
         private fun daily(
             interval: Int,

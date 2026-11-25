@@ -139,4 +139,20 @@ class RoutineFormTest {
         // Opened at an earlier event but not picked: a rename leaves the schedule alone.
         assertEquals(changed, RoutineDraft.of(changed).toRoutine("x", today.minusDays(2), now, changed))
     }
+
+    @Test
+    fun `a yearly span goes through the form, and 29 February can't be an end`() {
+        val dec = { day: Int -> java.time.MonthDay.of(java.time.Month.DECEMBER, day) }
+        val draft = RoutineDraft("Advent of Code", Repeat.YEARLY, yearFrom = dec(1), yearUntil = dec(12), time = LocalTime.of(6, 0))
+        val routine = draft.toRoutine("aoc", today, now)!!
+
+        assertEquals(
+            de.steppicrew.kladde.model.Recurrence
+                .Yearly(dec(1), dec(12)),
+            routine.recurrence,
+        )
+        assertEquals(draft, RoutineDraft.of(routine))
+        assertNull(draft.copy(yearUntil = null).recurrence)
+        assertNull(draft.copy(yearFrom = LEAP_DAY).recurrence)
+    }
 }

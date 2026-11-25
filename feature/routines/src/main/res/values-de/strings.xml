@@ -84,4 +84,9 @@
     <string name="routines_group_new">Neue Gruppe</string>
     <string name="routines_group_add">Hinzufügen</string>
     <string name="routines_pause_groups">Ganze Gruppe wählen:</string>
+    <string name="routines_yearly">Jährlich, von–bis</string>
+    <string name="routines_yearly_from">Von</string>
+    <string name="routines_yearly_until">Bis</string>
+    <string name="routines_yearly_pick">Tag wählen</string>
+    <string name="routines_yearly_leap_day">Der 29. Februar kann nicht Anfang oder Ende sein, die meisten Jahre haben ihn nicht.</string>
 </resources>

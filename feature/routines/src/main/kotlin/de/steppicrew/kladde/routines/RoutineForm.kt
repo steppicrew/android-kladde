@@ -8,6 +8,8 @@ import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.Month
+import java.time.MonthDay
 import java.time.ZoneId
 
 /** How often, as the form offers it. */
@@ -21,6 +23,9 @@ internal enum class Repeat {
 
     /** E.g. the 1st and 15th ([RoutineDraft.monthDays]). */
     MONTHLY_DAYS,
+
+    /** Every year from–until, e.g. 1–12 December ([RoutineDraft.yearFrom], [RoutineDraft.yearUntil]). */
+    YEARLY,
 }
 
 /** What the routine form holds while it is being filled in. */
@@ -33,6 +38,9 @@ internal data class RoutineDraft(
     val nths: Set<Int> = setOf(1),
     /** For [Repeat.MONTHLY_DAYS]: 1–31, or [Recurrence.MonthlyByDay.LAST_DAY]. */
     val monthDays: Set<Int> = emptySet(),
+    /** For [Repeat.YEARLY]: the first and last day of the span; not 29 February. */
+    val yearFrom: MonthDay? = null,
+    val yearUntil: MonthDay? = null,
     val time: LocalTime? = null,
     val checkable: Boolean = true,
     /** Goes on during pauses for all routines ([Routine.ignoresPauses]). */
@@ -63,7 +71,14 @@ internal data class RoutineDraft(
                         .takeIf { it.isNotEmpty() }
                         ?.let(Recurrence::MonthlyByWeekday)
                 Repeat.MONTHLY_DAYS -> monthDays.takeIf { it.isNotEmpty() }?.let(Recurrence::MonthlyByDay)
+                Repeat.YEARLY -> yearly()
             }
+
+    private fun yearly(): Recurrence? {
+        val from = yearFrom?.takeIf { it != LEAP_DAY }
+        val until = yearUntil?.takeIf { it != LEAP_DAY }
+        return if (from != null && until != null) Recurrence.Yearly(from, until) else null
+    }
 
     val isComplete: Boolean get() = title.isNotBlank() && recurrence != null
 
@@ -120,6 +135,7 @@ internal data class RoutineDraft(
                         nths = recurrence.days.mapTo(HashSet()) { it.n },
                     )
                 is Recurrence.MonthlyByDay -> RoutineDraft(routine.title, Repeat.MONTHLY_DAYS, monthDays = recurrence.days)
+                is Recurrence.Yearly -> RoutineDraft(routine.title, Repeat.YEARLY, yearFrom = recurrence.from, yearUntil = recurrence.until)
             }.copy(
                 time = routine.time,
                 checkable = routine.checkable,
@@ -130,3 +146,6 @@ internal data class RoutineDraft(
             )
     }
 }
+
+/** 29 February: not an end of a yearly span, as most years lack it. */
+internal val LEAP_DAY: MonthDay = MonthDay.of(Month.FEBRUARY, 29)
