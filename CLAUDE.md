@@ -4,8 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # Kladde — private diary and data tracker (working name)
 
-Repo: `steppicrew/android-kladde` (private). Package / namespace: `de.steppicrew.kladde`;
-debug builds install side by side as `de.steppicrew.kladde.debug`.
+Repo: `steppicrew/android-kladde` (**public**, no licence yet). Package / namespace:
+`de.steppicrew.kladde`; debug builds install side by side as `de.steppicrew.kladde.debug`.
+Commits are authored as `steppicrew <kladde@steppicrew.de>` (set in the repo's git config).
 
 ## What this is
 
@@ -38,7 +39,10 @@ What exists so far: the Gradle skeleton, a minimal `core/model` + `core/data` (t
 data points in plain Room), and the ADX receiver in `integration/adx`. There is **no vault,
 no crypto and no sync yet** — `docs/crypto.md` doesn't exist yet; write it before
 `core/crypto`. `VaultLock` is a stub that is unlocked unless locked through the debug
-backdoor. Hilt and SQLCipher are not wired yet (manual wiring in `KladdeApp`).
+backdoor. Hilt and SQLCipher are not wired yet (manual wiring in `KladdeApp`). The privacy
+policy is live on GitHub Pages (see "Privacy & legal"). Known gaps: no revoke screen for ADX
+senders (`AdxReceiver.revoke` exists), and the entry list shows the sender's package name
+instead of its label.
 
 ## Tech stack (proposed)
 
