@@ -23,8 +23,8 @@ import java.util.Locale
 /** "Jährlich": the first and last day of the span, picked as dates whose year doesn't matter. */
 @Composable
 internal fun YearlyFields(
-    draft: RoutineDraft,
-    onChange: (RoutineDraft) -> Unit,
+    draft: ScheduleDraft,
+    onChange: (ScheduleDraft) -> Unit,
 ) {
     // Which end is being picked: "from", "until" or none.
     var picking by rememberSaveable { mutableStateOf<String?>(null) }

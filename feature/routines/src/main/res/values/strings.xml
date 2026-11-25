@@ -14,7 +14,6 @@
     <string name="routines_new">New routine</string>
     <string name="routines_change">Change routine</string>
     <string name="routines_title">Name</string>
-    <string name="routines_repeat">Repeats</string>
     <string name="routines_every_day">Every day</string>
     <string name="routines_weekdays">On certain weekdays</string>
     <string name="routines_every_n_days">Every few days</string>
@@ -65,8 +64,6 @@
     <string name="routines_add_extra">Also on another day …</string>
     <string name="routines_remove_extra">Remove this extra day</string>
     <string name="routines_extra">Extra</string>
-    <string name="routines_applies_from">Repeat and time apply from</string>
-    <string name="routines_applies_from_hint">The days before keep their schedule. Name, ticking off and conditions change throughout.</string>
     <string name="routines_ignores_pauses">Go on during pauses</string>
     <string name="routines_ignores_pauses_hint">A pause for all routines leaves it alone, e.g. a medicine on vacation. A pause that names it still pauses it.</string>
     <string name="routines_pause_all_but">All routines except %1$s</string>
@@ -91,4 +88,14 @@
     <string name="routines_yearly_leap_day">29 February can\'t start or end it, as most years don\'t have it.</string>
     <string name="routines_not_planned">Not planned</string>
     <string name="routines_not_planned_hint">Only on extra days you add; as a schedule change: not planned from then on.</string>
+    <string name="routines_schedules">Schedule</string>
+    <string name="routines_schedules_hint">Each card applies from its date until the next one starts. Tap one to change it; what is past stays as it was.</string>
+    <string name="routines_schedules_earlier">Show earlier ones (%1$d)</string>
+    <string name="routines_schedule_add">Add a change</string>
+    <string name="routines_schedule_from">From</string>
+    <string name="routines_schedule_since">from %1$s</string>
+    <string name="routines_schedule_same_day">Another card starts on the same day.</string>
+    <string name="routines_every_n">every %1$s days</string>
+    <string name="routines_on_days">on the %1$s</string>
+    <string name="routines_schedule_running">Running now: tap to change it from today on</string>
 </resources>

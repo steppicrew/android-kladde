@@ -12,6 +12,7 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -39,8 +40,20 @@ internal fun DateDialog(
     initial: LocalDate,
     onPick: (LocalDate) -> Unit,
     onDismiss: () -> Unit,
+    /** The first day that can be picked; null for any. */
+    earliest: LocalDate? = null,
 ) {
-    val state = rememberDatePickerState(initialSelectedDateMillis = initial.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
+    val first = earliest?.atStartOfDay(ZoneOffset.UTC)?.toInstant()?.toEpochMilli()
+    val state =
+        rememberDatePickerState(
+            initialSelectedDateMillis = initial.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
+            selectableDates =
+                object : SelectableDates {
+                    override fun isSelectableDate(utcTimeMillis: Long) = first == null || utcTimeMillis >= first
+
+                    override fun isSelectableYear(year: Int) = earliest == null || year >= earliest.year
+                },
+        )
     DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {

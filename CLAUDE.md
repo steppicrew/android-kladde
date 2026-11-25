@@ -140,7 +140,8 @@ Added at the owner's request after step 4 (**built**): monthly schedules ("1st a
 "last Friday", "on the 1st and 15th"), yearly spans ("1–12 December"; within one month a plain
 `FREQ=YEARLY;BYMONTH;BYMONTHDAY` RRULE, across months `X-KLADDE-SPAN=MMDD/MMDD`, as RRULE has no
 form for it; 29 February can't be an end), extra one-off days ("Rüdersdorf this Friday too", an
-RDATE), and schedule changes that apply only from the edited event on (schedule versions).
+RDATE), and stacked schedules (base plus changes, each from its own date, "Nicht geplant" =
+empty RRULE).
 
 - **One kind of item** for tasks and events: "Sport" and "Rüdersdorf" are both routines;
   ticking off (`checkable`) is a switch per routine. A non-checkable routine just happens and
@@ -154,9 +155,13 @@ RDATE), and schedule changes that apply only from the edited event on (schedule 
   `routine_completions` (DB 4), `block_rules` (5), `occurrence_overrides` (6),
   `routine_pauses` (7), `routine_extras` (8), `routine_schedule_versions` (9),
   `routines.ignores_pauses` (10), `occurrence_overrides.new_time` + `routine_completions.done_at`
-  (11), `routines.time_zone` (12), `routine_groups` (13); screens in `feature/routines`. A change to repeat or time applies from the event the form was opened
-  at (`Routine.withSchedule`); name, ticking off and conditions change throughout. A move
-  changes the date only, not the time. An extra on a day the routine is planned anyway adds
+  (11), `routines.time_zone` (12), `routine_groups` (13), `routine_pauses.groups` (14); DB 15
+  turned schedules around: the `routines` row holds the base schedule (from `start_date`),
+  `routine_schedule_versions` the later changes (`Routine.changes`, `withSchedules`). The form
+  shows them as cards by start date: the one in effect today and later ones, earlier ones on
+  request; each can be edited, a change card deleted (the one before it goes on), "Änderung
+  hinzufügen" copies the schedule in effect at the opened event. Repeat and time are per card;
+  name, ticking off, zone, groups and conditions are per routine. Screens in `feature/routines`. An extra on a day the routine is planned anyway adds
   nothing. Deleting a routine drops a pause that named only it (an empty list would mean
   all routines).
   A routine can go on during pauses for all routines (`ignoresPauses`; a pause naming it still
@@ -166,8 +171,7 @@ RDATE), and schedule changes that apply only from the edited event on (schedule 
   Routines can be in groups ("Arbeit", "Privat"); in a pause of only some routines a group chip
   covers all its routines, also ones that join the group later (`RoutinePause.groups`, DB 14).
   A past day not ticked off (`MISSED`, derived) shows as "Ausgelassen" and can still be ticked
-  "Erledigt"; so can a past `SKIPPED` one. A picked "Gilt ab" earlier than the current schedule's start moves that start back, even with no
-  other change.
+  "Erledigt"; so can a past `SKIPPED` one.
 
 The full design below is the target; the first version is the subset above.
 
@@ -196,7 +200,7 @@ Model:
 - **Occurrences are computed, not stored.** Only completions are stored, keyed by
   `(routineId, occurrence date)`. A past occurrence with no completion = `MISSED`.
 - Editing a routine's schedule applies from now on; past completions stay untouched
-  (store `validFrom` on schedule versions).
+  (store `validFrom` on schedule versions; built as schedule cards, see above).
 - One-off tasks are routines with a single occurrence.
 Moving, adding and cancelling single occurrences:
 - **Move:** an occurrence can be moved to another date and/or time ("this week's Tuesday

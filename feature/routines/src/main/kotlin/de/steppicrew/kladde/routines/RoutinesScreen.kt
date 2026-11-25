@@ -62,7 +62,7 @@ fun RoutinesScreen(
     var editingFrom by rememberSaveable { mutableStateOf<String?>(null) }
     val current = editing
     if (current != null) {
-        EditRoutine(current, editingFrom?.let(LocalDate::parse) ?: today, routines, rules, repository, ::io) { editing = null }
+        EditRoutine(current, today, editingFrom?.let(LocalDate::parse) ?: today, routines, rules, repository, ::io) { editing = null }
         return
     }
     var showPauses by rememberSaveable { mutableStateOf(false) }
@@ -180,6 +180,7 @@ private fun RoutineRepository.act(
 @Composable
 private fun EditRoutine(
     id: String,
+    today: LocalDate,
     from: LocalDate,
     routines: List<Routine>,
     rules: List<BlockRule>,
@@ -190,30 +191,18 @@ private fun EditRoutine(
 ) {
     val routine = routines.firstOrNull { it.id == id }
     RoutineEditor(
-        initial = routine?.let { RoutineDraft.of(it, rules) } ?: RoutineDraft(),
+        initial = routine?.let { RoutineDraft.of(it, rules) } ?: RoutineDraft.new(today),
         isNew = routine == null,
-        scheduleFrom = from,
+        today = today,
+        openedAt = from,
         // What it can give way to: the others, bar those that would close a loop.
         blockerChoices = routines.filter { it.id != id && !wouldCycle(id, it.id, rules) },
         groupChoices = routines.flatMap { it.groups }.distinct(),
-        onSave = { draft, appliesFrom, picked ->
-            draft
-                .toRoutine(
-                    Ids.newId(),
-                    if (routine ==
-                        null
-                    ) {
-                        LocalDate.now()
-                    } else {
-                        appliesFrom
-                    },
-                    Instant.now(),
-                    routine,
-                    picked,
-                )?.let { saved ->
-                    val blockers = draft.blockers.filterTo(HashSet()) { blocker -> routines.any { it.id == blocker } }
-                    io { repository.save(saved, blockers) }
-                }
+        onSave = { draft ->
+            draft.toRoutine(Ids.newId(), Instant.now(), routine)?.let { saved ->
+                val blockers = draft.blockers.filterTo(HashSet()) { blocker -> routines.any { it.id == blocker } }
+                io { repository.save(saved, blockers) }
+            }
             onDone()
         },
         onDelete = {
