@@ -26,7 +26,7 @@ class KladdeApp :
         val labelNotifications = LabelNotifications(this)
         AdxReceiver.init(
             this,
-            KladdeAdxStore(vault, trackerRepository, dataPointRepository, subTypeLabelRepository, onNewLabel = labelNotifications::show),
+            KladdeAdxStore(vault, trackerRepository, dataPointRepository, subTypeLabelRepository, listener = labelNotifications),
         )
     }
 }

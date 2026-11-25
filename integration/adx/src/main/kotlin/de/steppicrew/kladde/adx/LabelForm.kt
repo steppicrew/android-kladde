@@ -1,5 +1,9 @@
 package de.steppicrew.kladde.adx
 
+import de.steppicrew.adx.AdxStreamProposal
+import de.steppicrew.kladde.model.SubTypeLabel
+import de.steppicrew.kladde.model.SubTypeLabelStatus
+
 internal const val VOLUME_ML = "intake.volume_ml"
 internal const val ABV_PCT = "intake.abv_pct"
 internal const val ALCOHOL_G = "intake.alcohol_g"
@@ -59,6 +63,19 @@ internal fun parseValue(text: String): Double? =
         .toDoubleOrNull()
         ?.takeIf { it.isFinite() && it >= 0 }
 
+/** A value as the fields show it: no trailing ".0", the decimal sign of [locale]. */
+internal fun formatValue(
+    value: Double,
+    locale: java.util.Locale = java.util.Locale.getDefault(),
+): String {
+    val format = java.text.NumberFormat.getNumberInstance(locale)
+    format.isGroupingUsed = false
+    format.maximumFractionDigits = MAX_FRACTION_DIGITS
+    return format.format(value)
+}
+
+private const val MAX_FRACTION_DIGITS = 3
+
 /**
  * The default values to store for a label of [kind], from the [typed] text per attr key.
  * A blank field stores nothing; null while any typed value isn't a number.
@@ -76,6 +93,24 @@ internal fun labelDefaults(
     }
     if (kind == LabelKind.NON_ALCOHOLIC && ABV_PCT in attrKeys) values[ABV_PCT] = 0.0
     return values
+}
+
+/**
+ * This label with what the sender says about it in [proposal]: its name, its numeric defaults
+ * and the stream's attrs. An open label the sender named and gave every value the label screen
+ * would ask for (bar grams of alcohol, which follow from volume and strength) needs no question.
+ */
+internal fun SubTypeLabel.describedBy(proposal: AdxStreamProposal): SubTypeLabel {
+    val sub = proposal.sub(key)
+    val defaults =
+        sub
+            ?.attrs
+            .orEmpty()
+            .mapNotNull { (attr, value) -> (value as? Number)?.toDouble()?.let { attr to it } }
+            .toMap()
+    val updated = copy(senderLabel = sub?.label, senderDefaults = defaults, attrKeys = proposal.attrKeys)
+    val complete = sub?.label != null && (askedAttrs(proposal.attrKeys) - ALCOHOL_G).all { it in defaults }
+    return if (status == SubTypeLabelStatus.OPEN && complete) updated.copy(status = SubTypeLabelStatus.DESCRIBED) else updated
 }
 
 private fun askedAttrs(attrKeys: List<String>): List<String> = ASKED_ATTRS.filter { it in attrKeys }

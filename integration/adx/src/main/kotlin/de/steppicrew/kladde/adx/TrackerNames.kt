@@ -74,7 +74,7 @@ internal fun presetLabelNames(
         val taken = given.getOrPut(label.trackerId) { HashSet() }
         val name =
             generateSequence(1) { it + 1 }
-                .map { n -> if (n == 1) label.key else "${label.key} $n" }
+                .map { n -> if (n == 1) label.shownName else "${label.shownName} $n" }
                 .first { candidate -> normalized(candidate) !in taken && nameProblem(candidate, others[label.id].orEmpty()) == null }
         taken += normalized(name)
         label.id to name

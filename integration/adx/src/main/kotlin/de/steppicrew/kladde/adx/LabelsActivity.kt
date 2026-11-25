@@ -119,7 +119,7 @@ class LabelsActivity : ComponentActivity() {
                 label = label,
                 trackerName = trackers[label.trackerId]?.name ?: "?",
                 senderLabel = label.sourcePackage?.let { senders[it]?.label },
-                presetName = presets[label.id] ?: label.key,
+                presetName = presets[label.id] ?: label.shownName,
                 otherNames = others[label.id].orEmpty(),
             )
         }
@@ -196,7 +196,15 @@ private fun LabelCard(
     var name by rememberSaveable { mutableStateOf(item.presetName) }
     val nameProblem = nameProblem(name, item.otherNames)
     var kind by rememberSaveable { mutableStateOf(kinds.first()) }
-    val typed = remember { mutableStateMapOf<String, String>() }
+    // The sending app's defaults start the fields; the user's answer replaces them.
+    val typed =
+        remember {
+            mutableStateMapOf<String, String>().apply {
+                label.senderDefaults.forEach { (key, value) ->
+                    put(key, formatValue(value))
+                }
+            }
+        }
     val defaults = labelDefaults(kind, label.attrKeys, typed)
     OutlinedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

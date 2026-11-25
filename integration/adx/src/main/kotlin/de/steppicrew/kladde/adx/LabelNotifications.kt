@@ -18,9 +18,13 @@ import android.os.Build
  */
 class LabelNotifications(
     context: Context,
-) {
+) : LabelListener {
     private val context = context.applicationContext
     private val manager = this.context.getSystemService(NotificationManager::class.java)
+
+    override fun onNewLabel(new: NewLabel) = show(new)
+
+    override fun onLabelSettled(labelId: String) = cancel(labelId)
 
     fun show(new: NewLabel) {
         if (!canPost()) return
@@ -43,7 +47,7 @@ class LabelNotifications(
         val notification =
             builder()
                 .setContentTitle(context.getString(R.string.adx_label_notification_title, new.senderLabel))
-                .setContentText(context.getString(R.string.adx_label_notification_text, new.label.key, new.trackerName))
+                .setContentText(context.getString(R.string.adx_label_notification_text, new.label.shownName, new.trackerName))
                 .setContentIntent(open)
                 .setAutoCancel(true)
                 .setVisibility(Notification.VISIBILITY_PRIVATE)

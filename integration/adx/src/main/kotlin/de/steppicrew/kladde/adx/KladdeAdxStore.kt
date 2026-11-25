@@ -21,8 +21,9 @@ import java.time.Instant
 /**
  * Stores ADX entries as data points of the tracker each stream is mapped to.
  *
- * A label ([AdxUpsert.sub]) the tracker has no record of yet becomes an open label record and
- * is handed to [onNewLabel], so the user can say what it is (docs/decisions/0002).
+ * A label ([AdxUpsert.sub]) the tracker has no record of yet becomes a label record. Unless the
+ * sender described it completely, it is open and goes to [listener], so the user can say what it
+ * is; what the sender says about a label is kept current (docs/decisions/0002).
  *
  * While the vault is locked every call answers BUSY and the sender keeps its outbox
  * (option B in docs/decisions/0001). TODO(option A): accept while locked by writing
@@ -34,7 +35,7 @@ class KladdeAdxStore(
     private val points: DataPointRepository,
     private val labels: SubTypeLabelRepository,
     private val clock: () -> Instant = Instant::now,
-    private val onNewLabel: (NewLabel) -> Unit = {},
+    private val listener: LabelListener = object : LabelListener {},
 ) : AdxStore {
     override fun currentRev(
         sender: AdxConsent,
@@ -55,19 +56,53 @@ class KladdeAdxStore(
         val withSub = tracker.withSubType(op.sub)
         if (withSub !== tracker) trackers.save(withSub)
         points.upsertExternal(AdxMapping.dataPoint(sender.packageName, tracker.id, tracker.unit, op, AdxCodec.encodeOp(op)))
-        op.sub?.let { key ->
-            val label =
-                SubTypeLabel(
-                    id = Ids.newId(),
-                    trackerId = tracker.id,
-                    key = key,
-                    status = SubTypeLabelStatus.OPEN,
-                    createdAt = clock(),
-                    attrKeys = stream.proposal.attrKeys,
-                    sourcePackage = sender.packageName,
-                )
-            labels.recordIfNew(label)?.let { onNewLabel(NewLabel(it, tracker.name, sender.label)) }
+        op.sub?.let { key -> noteLabel(sender, stream, tracker, key) }
+    }
+
+    /** The sender renamed subs or changed their defaults: their label records follow. */
+    override fun describe(
+        sender: AdxConsent,
+        stream: AdxStreamGrant,
+    ) {
+        requireUnlocked()
+        val tracker = trackerFor(sender, stream)
+        for (sub in stream.proposal.subs) {
+            labels.findByKey(tracker.id, sub.key)?.let { refresh(it, stream) }
         }
+    }
+
+    /** Records a label the first time an entry uses it, else keeps what the sender says about it current. */
+    private fun noteLabel(
+        sender: AdxConsent,
+        stream: AdxStreamGrant,
+        tracker: Tracker,
+        key: String,
+    ) {
+        labels.findByKey(tracker.id, key)?.let { return refresh(it, stream) }
+        val label =
+            SubTypeLabel(
+                id = Ids.newId(),
+                trackerId = tracker.id,
+                key = key,
+                status = SubTypeLabelStatus.OPEN,
+                createdAt = clock(),
+                sourcePackage = sender.packageName,
+                sourceStream = stream.proposal.key,
+            ).describedBy(stream.proposal)
+        labels
+            .recordIfNew(label)
+            ?.takeIf { it.status == SubTypeLabelStatus.OPEN }
+            ?.let { listener.onNewLabel(NewLabel(it, tracker.name, sender.label)) }
+    }
+
+    private fun refresh(
+        label: SubTypeLabel,
+        stream: AdxStreamGrant,
+    ) {
+        val updated = label.describedBy(stream.proposal)
+        if (updated == label) return
+        labels.update(updated)
+        if (label.status == SubTypeLabelStatus.OPEN && updated.status != SubTypeLabelStatus.OPEN) listener.onLabelSettled(label.id)
     }
 
     override fun delete(
@@ -98,6 +133,15 @@ class KladdeAdxStore(
             ?: AdxMapping
                 .newTracker(sender.packageName, stream.proposal, clock(), stream.target ?: Ids.newId())
                 .also(trackers::save)
+}
+
+/** What the store tells the app about labels; both default to doing nothing. */
+interface LabelListener {
+    /** A label to ask the user about. */
+    fun onNewLabel(new: NewLabel) = Unit
+
+    /** An open label that needs no answer any more, because the sender described it completely. */
+    fun onLabelSettled(labelId: String) = Unit
 }
 
 /** A label seen for the first time, with what a notification about it shows. */

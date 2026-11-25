@@ -44,7 +44,18 @@ class KladdeAdxStoreTest {
         }
     private val labels = SubTypeLabelRepository(db)
     private val newLabels = mutableListOf<NewLabel>()
-    private val store = KladdeAdxStore(vault, trackers, points, labels, { Instant.EPOCH }) { newLabels += it }
+    private val settled = mutableListOf<String>()
+    private val listener =
+        object : LabelListener {
+            override fun onNewLabel(new: NewLabel) {
+                newLabels += new
+            }
+
+            override fun onLabelSettled(labelId: String) {
+                settled += labelId
+            }
+        }
+    private val store = KladdeAdxStore(vault, trackers, points, labels, { Instant.EPOCH }, listener)
 
     private val proposal =
         AdxStreamProposal(
@@ -148,6 +159,69 @@ class KladdeAdxStoreTest {
         store.upsert(sender, grant, beer(2, sub = "beerSmall"))
 
         assertTrue(newLabels.isEmpty())
+    }
+
+    private fun described(vararg subs: AdxSub) = grant.copy(proposal = proposal.copy(subs = subs.toList()))
+
+    private val small = AdxSub("beerSmall", "Small beer")
+    private val smallComplete = AdxSub("beerSmall", "Small beer", mapOf("intake.volume_ml" to 330, "intake.abv_pct" to 5))
+
+    @Test
+    fun `a label the sender named is asked about with its name and kept as the sender's`() {
+        store.upsert(sender, described(small), beer(1, sub = "beerSmall"))
+
+        val label = newLabels.single().label
+        assertEquals("Small beer", label.senderLabel)
+        assertEquals("Small beer", label.shownName)
+        assertEquals("drinks.beer", label.sourceStream)
+        assertEquals(SubTypeLabelStatus.OPEN, label.status)
+    }
+
+    @Test
+    fun `a label the sender described completely asks nothing`() {
+        store.upsert(sender, described(smallComplete), beer(1, sub = "beerSmall"))
+
+        assertTrue(newLabels.isEmpty())
+        val label = labels.findByKey("tracker-1", "beerSmall")!!
+        assertEquals(SubTypeLabelStatus.DESCRIBED, label.status)
+        assertEquals(mapOf("intake.volume_ml" to 330.0, "intake.abv_pct" to 5.0), label.senderDefaults)
+    }
+
+    @Test
+    fun `describe renames a label and settles an open one the sender now describes completely`() {
+        store.upsert(sender, described(small), beer(1, sub = "beerSmall"))
+        val id = newLabels.single().label.id
+
+        store.describe(sender, described(smallComplete.copy(label = "Kleines Bier")))
+
+        val label = labels.find(id)!!
+        assertEquals("Kleines Bier", label.senderLabel)
+        assertEquals(SubTypeLabelStatus.DESCRIBED, label.status)
+        assertEquals(listOf(id), settled)
+    }
+
+    @Test
+    fun `the user's answer survives what the sender says later`() {
+        store.upsert(sender, described(small), beer(1, sub = "beerSmall"))
+        val id = newLabels.single().label.id
+        labels.specify(id, "Kleines", mapOf("intake.volume_ml" to 300.0))
+
+        store.describe(sender, described(smallComplete))
+        store.upsert(sender, described(smallComplete.copy(label = "Small")), beer(2, sub = "beerSmall"))
+
+        val label = labels.find(id)!!
+        assertEquals(SubTypeLabelStatus.SPECIFIED, label.status)
+        assertEquals("Kleines", label.shownName)
+        assertEquals(mapOf("intake.volume_ml" to 300.0), label.defaults)
+        assertEquals("Small", label.senderLabel)
+        assertTrue(settled.isEmpty())
+    }
+
+    @Test
+    fun `a locked vault answers busy to describe`() {
+        vault.isUnlocked = false
+
+        assertBusy { store.describe(sender, described(small)) }
     }
 
     @Test
