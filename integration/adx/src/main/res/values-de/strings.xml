@@ -23,6 +23,7 @@
     <string name="adx_labels_sent_as">Gesendet als „%1$s“</string>
     <string name="adx_labels_from">%1$s · von %2$s</string>
     <string name="adx_labels_name">Name</string>
+    <string name="adx_labels_name_taken">Diesen Namen hat schon eine andere Eintragsart von %1$s</string>
     <string name="adx_labels_kind_alcoholic">Alkoholisch</string>
     <string name="adx_labels_kind_non_alcoholic">Alkoholfrei</string>
     <string name="adx_labels_kind_values">Mit Werten</string>

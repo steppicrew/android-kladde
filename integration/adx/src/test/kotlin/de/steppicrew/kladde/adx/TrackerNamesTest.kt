@@ -1,6 +1,8 @@
 package de.steppicrew.kladde.adx
 
 import de.steppicrew.adx.AdxStreamProposal
+import de.steppicrew.kladde.model.SubTypeLabel
+import de.steppicrew.kladde.model.SubTypeLabelStatus
 import de.steppicrew.kladde.model.Tracker
 import de.steppicrew.kladde.model.TrackerSource
 import de.steppicrew.kladde.model.TrackerType
@@ -52,6 +54,46 @@ class TrackerNamesTest {
         assertEquals(NameProblem.TAKEN, nameProblem("beer ", listOf("Beer")))
         assertNull(nameProblem("Pils", listOf("Beer")))
     }
+
+    @Test
+    fun `a new entry type starts with its key, numbered when another of its tracker goes by it`() {
+        val labels =
+            listOf(
+                label("l1", "Pils", SubTypeLabelStatus.SPECIFIED, displayName = "Pils"),
+                label("l2", "beerSmall", SubTypeLabelStatus.IGNORED),
+                label("l3", "Pils"),
+                label("l4", "beerSmall"),
+                label("l5", "Pils", trackerId = "t2"),
+            )
+        val open = labels.filter { it.status == SubTypeLabelStatus.OPEN }
+
+        val names = presetLabelNames(open, otherLabelNames(labels))
+
+        assertEquals(mapOf("l3" to "Pils 2", "l4" to "beerSmall 2", "l5" to "Pils"), names)
+    }
+
+    @Test
+    fun `open entry types get names unique among themselves`() {
+        val open = listOf(label("l1", "Pils"), label("l2", "pils"))
+
+        assertEquals(mapOf("l1" to "Pils", "l2" to "pils 2"), presetLabelNames(open, otherLabelNames(open)))
+    }
+
+    @Test
+    fun `only entry types already looked at count as taken`() {
+        val others = otherLabelNames(listOf(label("l1", "Pils"), label("l2", "Weizen", SubTypeLabelStatus.SPECIFIED, "Weißbier")))
+
+        assertEquals(listOf("Weißbier"), others["l1"])
+        assertEquals(emptyList<String>(), others["l2"])
+    }
+
+    private fun label(
+        id: String,
+        key: String,
+        status: SubTypeLabelStatus = SubTypeLabelStatus.OPEN,
+        displayName: String? = null,
+        trackerId: String = "t1",
+    ) = SubTypeLabel(id, trackerId, key, status, Instant.EPOCH, displayName)
 
     private fun proposal(
         key: String,

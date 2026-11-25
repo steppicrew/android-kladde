@@ -92,6 +92,8 @@ class SubTypeLabelRepository(
 
     fun observeAll(): Flow<List<SubTypeLabel>> = db.subTypeLabels().observeAll().map { list -> list.map { it.toModel() } }
 
+    fun all(): List<SubTypeLabel> = db.subTypeLabels().all().map { it.toModel() }
+
     /** Stores [label] unless its tracker already has a record for its key; returns it when it was new. */
     fun recordIfNew(label: SubTypeLabel): SubTypeLabel? = label.takeIf { db.subTypeLabels().insert(it.toEntity()) != -1L }
 

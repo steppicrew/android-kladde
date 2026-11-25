@@ -42,6 +42,9 @@ internal interface SubTypeLabelDao {
     @Query("SELECT * FROM sub_type_labels")
     fun observeAll(): Flow<List<SubTypeLabelEntity>>
 
+    @Query("SELECT * FROM sub_type_labels")
+    fun all(): List<SubTypeLabelEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun save(label: SubTypeLabelEntity)
 }

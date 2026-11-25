@@ -1,6 +1,8 @@
 package de.steppicrew.kladde.adx
 
 import de.steppicrew.adx.AdxStreamProposal
+import de.steppicrew.kladde.model.SubTypeLabel
+import de.steppicrew.kladde.model.SubTypeLabelStatus
 import de.steppicrew.kladde.model.Tracker
 
 /**
@@ -47,6 +49,37 @@ internal fun nameProblem(
         others.any { normalized(it) == normalized(name) } -> NameProblem.TAKEN
         else -> null
     }
+
+/**
+ * The names the other entry types of a label's tracker go by, by label id: those already
+ * looked at, which keep their names. A label's own name must differ from them.
+ */
+internal fun otherLabelNames(all: List<SubTypeLabel>): Map<String, List<String>> {
+    val settled = all.filter { it.status != SubTypeLabelStatus.OPEN }
+    return all.associate { label ->
+        label.id to settled.filter { it.trackerId == label.trackerId && it.id != label.id }.map { it.shownName }
+    }
+}
+
+/**
+ * First names for [open] labels, by id: the key while no other entry type of the tracker goes
+ * by it, else the key with a number; unique among themselves too. [others] is [otherLabelNames].
+ */
+internal fun presetLabelNames(
+    open: List<SubTypeLabel>,
+    others: Map<String, List<String>>,
+): Map<String, String> {
+    val given = HashMap<String, MutableSet<String>>()
+    return open.associate { label ->
+        val taken = given.getOrPut(label.trackerId) { HashSet() }
+        val name =
+            generateSequence(1) { it + 1 }
+                .map { n -> if (n == 1) label.key else "${label.key} $n" }
+                .first { candidate -> normalized(candidate) !in taken && nameProblem(candidate, others[label.id].orEmpty()) == null }
+        taken += normalized(name)
+        label.id to name
+    }
+}
 
 private fun uniqueName(
     name: String,

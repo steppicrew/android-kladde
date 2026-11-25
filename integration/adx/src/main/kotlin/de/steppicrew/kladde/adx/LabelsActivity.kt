@@ -53,6 +53,10 @@ internal data class LabelItem(
     val trackerName: String,
     /** The sending app's name, or null when it isn't connected any more. */
     val senderLabel: String?,
+    /** The name the field starts with, free among the tracker's entry types. */
+    val presetName: String = label.key,
+    /** Names the tracker's other entry types go by; this one's must differ. */
+    val otherNames: List<String> = emptyList(),
 )
 
 /**
@@ -108,8 +112,16 @@ class LabelsActivity : ComponentActivity() {
     ): List<LabelItem> {
         val trackers = host.trackerRepository.all().associateBy { it.id }
         val senders = AdxReceiver.consents(this).all().associateBy { it.packageName }
+        val others = otherLabelNames(host.subTypeLabelRepository.all())
+        val presets = presetLabelNames(labels, others)
         return labels.map { label ->
-            LabelItem(label, trackers[label.trackerId]?.name ?: "?", label.sourcePackage?.let { senders[it]?.label })
+            LabelItem(
+                label = label,
+                trackerName = trackers[label.trackerId]?.name ?: "?",
+                senderLabel = label.sourcePackage?.let { senders[it]?.label },
+                presetName = presets[label.id] ?: label.key,
+                otherNames = others[label.id].orEmpty(),
+            )
         }
     }
 
@@ -181,7 +193,8 @@ private fun LabelCard(
 ) {
     val label = item.label
     val kinds = labelKinds(label.attrKeys)
-    var name by rememberSaveable { mutableStateOf("") }
+    var name by rememberSaveable { mutableStateOf(item.presetName) }
+    val nameProblem = nameProblem(name, item.otherNames)
     var kind by rememberSaveable { mutableStateOf(kinds.first()) }
     val typed = remember { mutableStateMapOf<String, String>() }
     val defaults = labelDefaults(kind, label.attrKeys, typed)
@@ -192,14 +205,7 @@ private fun LabelCard(
                 item.senderLabel?.let { stringResource(R.string.adx_labels_from, item.trackerName, it) } ?: item.trackerName,
                 style = MaterialTheme.typography.bodySmall,
             )
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text(stringResource(R.string.adx_labels_name)) },
-                placeholder = { Text(label.key) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            NameField(name, { name = it }, nameProblem, item.trackerName)
             if (kinds.size > 1) {
                 Column(Modifier.selectableGroup()) {
                     for (option in kinds) {
@@ -226,13 +232,36 @@ private fun LabelCard(
                 Text(stringResource(R.string.adx_labels_values_hint), style = MaterialTheme.typography.bodySmall)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = { defaults?.let { onSave(label.id, name, it) } }, enabled = defaults != null) {
+                Button(onClick = { defaults?.let { onSave(label.id, name, it) } }, enabled = defaults != null && nameProblem == null) {
                     Text(stringResource(R.string.adx_labels_save))
                 }
                 OutlinedButton(onClick = { onIgnore(label.id) }) { Text(stringResource(R.string.adx_labels_ignore)) }
             }
         }
     }
+}
+
+@Composable
+private fun NameField(
+    name: String,
+    onName: (String) -> Unit,
+    problem: NameProblem?,
+    trackerName: String,
+) {
+    OutlinedTextField(
+        value = name,
+        onValueChange = onName,
+        label = { Text(stringResource(R.string.adx_labels_name)) },
+        isError = problem != null,
+        supportingText =
+            when (problem) {
+                NameProblem.EMPTY -> ({ Text(stringResource(R.string.adx_connect_name_empty)) })
+                NameProblem.TAKEN -> ({ Text(stringResource(R.string.adx_labels_name_taken, trackerName)) })
+                null -> null
+            },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 @Composable
