@@ -66,5 +66,6 @@
     <string name="routines_add_extra">Also on another day …</string>
     <string name="routines_remove_extra">Remove this extra day</string>
     <string name="routines_extra">Extra</string>
-    <string name="routines_change_from">Changes to repeat and time apply from %1$s on; the days before keep theirs.</string>
+    <string name="routines_applies_from">Repeat and time apply from</string>
+    <string name="routines_applies_from_hint">The days before keep their schedule. Name, ticking off and conditions change throughout.</string>
 </resources>

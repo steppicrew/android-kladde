@@ -15,9 +15,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -26,8 +24,6 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,15 +51,17 @@ import java.time.format.TextStyle
 internal fun RoutineEditor(
     initial: RoutineDraft,
     isNew: Boolean,
-    /** For an edit: the day a change to repeat or time applies from. */
+    /** For an edit: the day a change to repeat or time applies from, unless the user picks another. */
     scheduleFrom: LocalDate,
     blockerChoices: List<Routine>,
-    onSave: (RoutineDraft) -> Unit,
+    onSave: (RoutineDraft, from: LocalDate) -> Unit,
     onDelete: () -> Unit,
     onCancel: () -> Unit,
 ) {
     var draft by rememberSaveable(stateSaver = DraftSaver) { mutableStateOf(initial) }
     var pickTime by rememberSaveable { mutableStateOf(false) }
+    var from by rememberSaveable { mutableStateOf(scheduleFrom.toString()) }
+    var pickFrom by rememberSaveable { mutableStateOf(false) }
     BackHandler(onBack = onCancel)
     Column(Modifier.fillMaxSize()) {
         Column(
@@ -74,15 +72,6 @@ internal fun RoutineEditor(
                 stringResource(if (isNew) R.string.routines_new else R.string.routines_change),
                 style = MaterialTheme.typography.headlineSmall,
             )
-            if (!isNew) {
-                Text(
-                    stringResource(
-                        R.string.routines_change_from,
-                        scheduleFrom.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)),
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
             OutlinedTextField(
                 value = draft.title,
                 onValueChange = { draft = draft.copy(title = it) },
@@ -90,15 +79,29 @@ internal fun RoutineEditor(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
+            if (!isNew) AppliesFrom(LocalDate.parse(from)) { pickFrom = true }
             RepeatFields(draft) { draft = it }
             TimeAndTicking(draft, onPickTime = { pickTime = true }) { draft = it }
             BlockerFields(draft, blockerChoices) { draft = it }
         }
         Row(Modifier.padding(horizontal = 24.dp, vertical = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(onClick = { onSave(draft) }, enabled = draft.isComplete) { Text(stringResource(R.string.routines_save)) }
+            Button(
+                onClick = { onSave(draft, LocalDate.parse(from)) },
+                enabled = draft.isComplete,
+            ) { Text(stringResource(R.string.routines_save)) }
             OutlinedButton(onClick = onCancel) { Text(stringResource(R.string.routines_cancel)) }
             if (!isNew) TextButton(onClick = onDelete) { Text(stringResource(R.string.routines_delete)) }
         }
+    }
+    if (pickFrom) {
+        DateDialog(
+            initial = LocalDate.parse(from),
+            onPick = {
+                from = it.toString()
+                pickFrom = false
+            },
+            onDismiss = { pickFrom = false },
+        )
     }
     if (pickTime) {
         TimeDialog(
@@ -138,26 +141,6 @@ private fun Choice(
         RadioButton(selected = selected, onClick = null)
         Text(label, Modifier.padding(start = 8.dp))
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun TimeDialog(
-    initial: LocalTime,
-    onPick: (LocalTime) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val state = rememberTimePickerState(initial.hour, initial.minute)
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(
-                onClick = { onPick(LocalTime.of(state.hour, state.minute)) },
-            ) { Text(stringResource(R.string.routines_ok)) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.routines_cancel)) } },
-        text = { TimePicker(state) },
-    )
 }
 
 /** Keeps a draft across rotation and process death as plain values. */
@@ -202,7 +185,7 @@ private fun RoutineEditorPreview() {
             isNew = false,
             scheduleFrom = LocalDate.of(2026, 11, 25),
             blockerChoices = emptyList(),
-            onSave = {},
+            onSave = { _, _ -> },
             onDelete = {},
             onCancel = {},
         )
@@ -337,5 +320,20 @@ private fun <T> ToggleChips(
                 label = { Text(label(option)) },
             )
         }
+    }
+}
+
+/** "Gilt ab": the day a change to repeat or time applies from; the days before keep theirs. */
+@Composable
+private fun AppliesFrom(
+    from: LocalDate,
+    onPick: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(R.string.routines_applies_from), style = MaterialTheme.typography.titleSmall)
+            OutlinedButton(onClick = onPick) { Text(from.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))) }
+        }
+        Text(stringResource(R.string.routines_applies_from_hint), style = MaterialTheme.typography.bodySmall)
     }
 }

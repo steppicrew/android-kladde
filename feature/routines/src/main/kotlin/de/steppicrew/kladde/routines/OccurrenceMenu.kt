@@ -2,12 +2,8 @@ package de.steppicrew.kladde.routines
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -16,9 +12,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import de.steppicrew.kladde.model.Occurrence
 import de.steppicrew.kladde.model.OccurrenceStatus
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -77,25 +71,4 @@ internal fun OccurrenceMenu(
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.routines_close)) } },
     )
-}
-
-/** Picks a day. The date picker works in UTC midnight millis; the dates here are local days. */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-internal fun DateDialog(
-    initial: LocalDate,
-    onPick: (LocalDate) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val state = rememberDatePickerState(initialSelectedDateMillis = initial.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(
-                onClick = { state.selectedDateMillis?.let { onPick(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()) } },
-                enabled = state.selectedDateMillis != null,
-            ) { Text(stringResource(R.string.routines_ok)) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.routines_cancel)) } },
-    ) { DatePicker(state) }
 }
