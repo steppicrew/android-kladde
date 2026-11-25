@@ -71,4 +71,7 @@
     <string name="routines_ignores_pauses">Läuft in Pausen weiter</string>
     <string name="routines_ignores_pauses_hint">Eine Pause für alle Routinen lässt sie aus, z. B. Tabletten im Urlaub. Eine Pause, die sie ausdrücklich nennt, pausiert sie trotzdem.</string>
     <string name="routines_pause_all_but">Alle Routinen außer %1$s</string>
+    <string name="routines_done_at">Erledigt um %1$s</string>
+    <string name="routines_done_at_day">Erledigt am %1$s um %2$s</string>
+    <string name="routines_done_at_pick">Früher erledigt, Uhrzeit wählen</string>
 </resources>

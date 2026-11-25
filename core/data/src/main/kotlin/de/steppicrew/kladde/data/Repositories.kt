@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
+import java.time.LocalTime
 
 /** Blocking calls run on the caller's thread; never call them from the main thread. */
 class TrackerRepository(
@@ -167,7 +168,14 @@ class RoutineRepository(
 
     fun observeOverrides(): Flow<List<OccurrenceOverride>> =
         db.overrides().observeAll().map { list ->
-            list.map { OccurrenceOverride(it.routineId, LocalDate.parse(it.originalDate), it.newDate?.let(LocalDate::parse)) }
+            list.map {
+                OccurrenceOverride(
+                    it.routineId,
+                    LocalDate.parse(it.originalDate),
+                    it.newDate?.let(LocalDate::parse),
+                    it.newTime?.let(LocalTime::parse),
+                )
+            }
         }
 
     /**
@@ -178,10 +186,11 @@ class RoutineRepository(
         routineId: String,
         originalDate: LocalDate,
         newDate: LocalDate?,
-    ) = if (newDate == originalDate) {
+        newTime: LocalTime? = null,
+    ) = if (newDate == originalDate && newTime == null) {
         restore(routineId, originalDate)
     } else {
-        db.overrides().save(OccurrenceOverrideEntity(routineId, originalDate.toString(), newDate?.toString()))
+        db.overrides().save(OccurrenceOverrideEntity(routineId, originalDate.toString(), newDate?.toString(), newTime?.toString()))
     }
 
     /** Takes back a move or a cancel: the occurrence is on its planned day again. */

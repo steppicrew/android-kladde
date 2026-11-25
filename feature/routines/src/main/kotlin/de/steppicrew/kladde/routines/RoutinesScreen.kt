@@ -26,6 +26,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
 
 /** Yesterday (to tick off late), today and the days up to a week ahead. */
@@ -85,6 +86,7 @@ fun RoutinesScreen(
         activePause = pauses.firstOrNull { it.isOn(today) },
         onPauses = { showPauses = true },
         onAction = { occurrence, action -> io { repository.act(occurrence, action) } },
+        onDoneAt = { occurrence, time -> io { repository.doneAt(occurrence, time) } },
         onOpen = { menuFor = it },
         onAdd = {
             editing = ""
@@ -114,11 +116,11 @@ private fun ChangeOccurrence(
     val planned = occurrence.originalDate
     OccurrenceMenu(
         occurrence = occurrence,
-        onMove = { newDate ->
+        onMove = { newDate, newTime ->
             if (occurrence.isExtra) {
                 io { extraRepository.move(RoutineExtra(id, planned), newDate) }
             } else {
-                io { repository.change(id, planned, newDate) }
+                io { repository.change(id, planned, newDate, newTime) }
             }
         },
         onCancel = { io { repository.change(id, planned, null) } },
@@ -142,6 +144,20 @@ private fun rememberToday(): LocalDate {
         }
     }
     return today
+}
+
+/** Records done at [time] on the occurrence's day, e.g. earlier than "Erledigt" was tapped. */
+private fun RoutineRepository.doneAt(
+    occurrence: Occurrence,
+    time: LocalTime,
+) {
+    val zone = ZoneId.systemDefault()
+    val at =
+        occurrence.date
+            .atTime(time)
+            .atZone(zone)
+            .toInstant()
+    complete(RoutineCompletion(occurrence.routine.id, occurrence.originalDate, CompletionStatus.DONE, Instant.now(), zone, at))
 }
 
 /** Does what a row's button says; answers and changes are kept under the day it was planned for. */

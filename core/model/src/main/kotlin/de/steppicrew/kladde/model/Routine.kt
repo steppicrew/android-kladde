@@ -90,6 +90,8 @@ data class RoutineCompletion(
     val recordedAt: Instant,
     /** The zone in effect when it was recorded, for showing the history correctly. */
     val zone: ZoneId,
+    /** When it was done: when "Erledigt" was tapped, or an earlier time the user set. */
+    val doneAt: Instant = recordedAt,
 )
 
 /** What an occurrence is on its day. Only [DONE] and [SKIPPED] are stored; the rest is derived. */
@@ -127,11 +129,18 @@ data class Occurrence(
     val pausedBy: RoutinePause? = null,
     /** Added on a day the schedule doesn't have ([RoutineExtra]). */
     val isExtra: Boolean = false,
+    /** A time it was moved to, in place of the routine's. */
+    val movedTime: LocalTime? = null,
+    /** For [OccurrenceStatus.DONE]: when it was done. */
+    val doneAt: Instant? = null,
 ) {
-    /** Its time under the schedule in effect on the day it was planned for. */
-    val time: LocalTime? get() = routine.timeOn(originalDate)
+    /** Its time: the one it was moved to, or the one under the schedule in effect on its planned day. */
+    val time: LocalTime? get() = movedTime ?: plannedTime
 
-    val isMoved: Boolean get() = originalDate != date
+    /** The time it had before it was moved. */
+    val plannedTime: LocalTime? get() = routine.timeOn(originalDate)
+
+    val isMoved: Boolean get() = originalDate != date || movedTime != null
 }
 
 /** "[routineId] doesn't take place on days when [blockerId] does." */

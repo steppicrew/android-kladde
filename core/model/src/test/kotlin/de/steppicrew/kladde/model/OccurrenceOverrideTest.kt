@@ -103,4 +103,46 @@ class OccurrenceOverrideTest {
 
         assertEquals(listOf(sport), plan.day(thursday, wednesday).map { it.routine })
     }
+
+    @Test
+    fun `a move can change the time too, or only the time`() {
+        val plan =
+            plan(
+                OccurrenceOverride(gym.id, wednesday, thursday, LocalTime.of(9, 30)),
+                OccurrenceOverride(gym.id, friday, friday, LocalTime.of(20, 0)),
+            )
+
+        val moved = plan.of(thursday, gym).single()
+        assertEquals(LocalTime.of(9, 30), moved.time)
+        assertEquals(LocalTime.of(7, 0), moved.plannedTime)
+        val retimed = plan.of(friday, gym).single()
+        assertEquals(LocalTime.of(20, 0), retimed.time)
+        assertTrue(retimed.isMoved)
+    }
+
+    @Test
+    fun `a day moved to another time sorts by its new time and is never hidden`() {
+        val plan = plan(OccurrenceOverride(sport.id, wednesday, wednesday, LocalTime.of(6, 0)))
+
+        // Untimed first; Sport at its new 06:00 before Gym at 07:00, and not hidden by Rüdersdorf.
+        assertEquals(listOf("Rüdersdorf", "Sport", "Gym"), plan.day(wednesday, wednesday).map { it.routine.title })
+        assertEquals(OccurrenceStatus.OPEN, plan.of(wednesday, sport).single().status)
+    }
+
+    @Test
+    fun `done records when it was done`() {
+        val at = Instant.parse("2026-11-25T17:42:00Z")
+        val done =
+            RoutineCompletion(
+                gym.id,
+                wednesday,
+                CompletionStatus.DONE,
+                Instant.parse("2026-11-25T19:00:00Z"),
+                ZoneId.of("Europe/Berlin"),
+                at,
+            )
+
+        assertEquals(at, plan(completions = listOf(done)).of(wednesday, gym).single().doneAt)
+        assertEquals(done.recordedAt, done.copy(doneAt = done.recordedAt).doneAt)
+    }
 }

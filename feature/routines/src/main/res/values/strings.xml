@@ -71,4 +71,7 @@
     <string name="routines_ignores_pauses">Go on during pauses</string>
     <string name="routines_ignores_pauses_hint">A pause for all routines leaves it alone, e.g. a medicine on vacation. A pause that names it still pauses it.</string>
     <string name="routines_pause_all_but">All routines except %1$s</string>
+    <string name="routines_done_at">Done at %1$s</string>
+    <string name="routines_done_at_day">Done on %1$s at %2$s</string>
+    <string name="routines_done_at_pick">Done earlier, pick the time</string>
 </resources>

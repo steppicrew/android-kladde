@@ -16,6 +16,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +38,7 @@ import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -47,6 +50,8 @@ internal fun WeekView(
     activePause: RoutinePause?,
     onPauses: () -> Unit,
     onAction: (Occurrence, RowAction) -> Unit,
+    /** Done at a time the user picked by holding "Erledigt". */
+    onDoneAt: (Occurrence, LocalTime) -> Unit,
     onOpen: (Occurrence) -> Unit,
     onAdd: () -> Unit,
 ) {
@@ -69,7 +74,7 @@ internal fun WeekView(
                     }
                     // A routine can be on a day twice when one was moved there: the planned day tells them apart.
                     items(occurrences, key = { "$date-${it.routine.id}-${it.originalDate}" }) { occurrence ->
-                        OccurrenceRow(occurrence, rowActions(occurrence, today), onAction, onOpen)
+                        OccurrenceRow(occurrence, rowActions(occurrence, today), onAction, onDoneAt, onOpen)
                     }
                     item(key = "$date-divider") { HorizontalDivider(Modifier.padding(top = 8.dp)) }
                 }
@@ -127,8 +132,10 @@ private fun OccurrenceRow(
     occurrence: Occurrence,
     actions: List<RowAction>,
     onAction: (Occurrence, RowAction) -> Unit,
+    onDoneAt: (Occurrence, LocalTime) -> Unit,
     onOpen: (Occurrence) -> Unit,
 ) {
+    var pickDoneTime by remember { mutableStateOf(false) }
     val routine = occurrence.routine
     Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
         val blocked = occurrence.status == OccurrenceStatus.BLOCKED || occurrence.status == OccurrenceStatus.CANCELLED
@@ -147,15 +154,38 @@ private fun OccurrenceRow(
                 Text(
                     stringResource(
                         R.string.routines_moved_from,
-                        occurrence.originalDate.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)),
+                        listOfNotNull(
+                            occurrence.originalDate.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)),
+                            occurrence.plannedTime?.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)),
+                        ).joinToString(", "),
                     ),
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
         }
         for (action in actions) {
-            TextButton(onClick = { onAction(occurrence, action) }) { Text(stringResource(action.label)) }
+            if (action == RowAction.DONE) {
+                // Tap: done now. Hold: done earlier, at a time to pick.
+                LongPressTextButton(
+                    stringResource(action.label),
+                    onClick = { onAction(occurrence, action) },
+                    onLongClick = { pickDoneTime = true },
+                    onLongClickLabel = stringResource(R.string.routines_done_at_pick),
+                )
+            } else {
+                TextButton(onClick = { onAction(occurrence, action) }) { Text(stringResource(action.label)) }
+            }
         }
+    }
+    if (pickDoneTime) {
+        TimeDialog(
+            initial = LocalTime.now().withSecond(0).withNano(0),
+            onPick = {
+                onDoneAt(occurrence, it)
+                pickDoneTime = false
+            },
+            onDismiss = { pickDoneTime = false },
+        )
     }
 }
 
@@ -200,11 +230,31 @@ internal fun rowActions(
     }
 }
 
+/** "Erledigt um 18:42", with the date when it was done on another day than its own. */
+@Composable
+private fun doneAtText(
+    at: Instant,
+    day: LocalDate,
+): String {
+    val local = at.atZone(ZoneId.systemDefault())
+    val time = local.toLocalTime().format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
+    return if (local.toLocalDate() == day) {
+        stringResource(R.string.routines_done_at, time)
+    } else {
+        stringResource(
+            R.string.routines_done_at_day,
+            local.toLocalDate().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)),
+            time,
+        )
+    }
+}
+
 @Composable
 private fun statusText(occurrence: Occurrence): String? =
     when (occurrence.status) {
         OccurrenceStatus.BLOCKED -> stringResource(R.string.routines_status_blocked, occurrence.blockedBy.joinToString(", ") { it.title })
-        OccurrenceStatus.DONE -> stringResource(R.string.routines_status_done)
+        OccurrenceStatus.DONE ->
+            occurrence.doneAt?.let { doneAtText(it, occurrence.date) } ?: stringResource(R.string.routines_status_done)
         OccurrenceStatus.SKIPPED -> stringResource(R.string.routines_status_skipped)
         OccurrenceStatus.MISSED -> stringResource(R.string.routines_status_missed)
         OccurrenceStatus.CANCELLED -> stringResource(R.string.routines_status_cancelled)
@@ -236,6 +286,7 @@ private fun WeekViewPreview() {
             activePause = null,
             onPauses = {},
             onAction = { _, _ -> },
+            onDoneAt = { _, _ -> },
             onOpen = {},
             onAdd = {},
         )

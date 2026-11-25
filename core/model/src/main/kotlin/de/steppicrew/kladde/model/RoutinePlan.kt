@@ -1,6 +1,7 @@
 package de.steppicrew.kladde.model
 
 import java.time.LocalDate
+import java.time.LocalTime
 
 /**
  * A change to one occurrence, keyed by the routine and the date it was planned for
@@ -11,6 +12,8 @@ data class OccurrenceOverride(
     val routineId: String,
     val originalDate: LocalDate,
     val newDate: LocalDate?,
+    /** The new time, or null to keep the routine's; may be the only change, with [newDate] the same day. */
+    val newTime: LocalTime? = null,
 ) {
     val isCancelled: Boolean get() = newDate == null
 }
@@ -115,45 +118,69 @@ class RoutinePlan(
             routines.filter { it.occursOn(date) }.map { routine ->
                 val change = overrides[routine.id to date]
                 when {
-                    change == null -> occurrence(routine, date, date, today)
+                    change == null -> occurrence(routine, date, today)
                     change.isCancelled -> Occurrence(routine, date, OccurrenceStatus.CANCELLED)
                     else -> null
                 }
             }
         val movedHere =
             movedTo[date].orEmpty().map { change ->
-                occurrence(byId.getValue(change.routineId), date, change.originalDate, today)
+                occurrence(byId.getValue(change.routineId), date, today, change)
             }
-        val extra = extrasOn[date].orEmpty().map { occurrence(it, date, date, today, isExtra = true) }
+        val extra = extrasOn[date].orEmpty().map { occurrence(it, date, today, isExtra = true) }
         return (planned.filterNotNull() + movedHere + extra)
             .sortedWith(
                 compareBy(nullsFirst()) { occurrence: Occurrence -> occurrence.time }.thenBy { it.routine.title.lowercase() },
             )
     }
 
+    /** The occurrence of [routine] on [date]: planned there, moved there by [change], or an extra. */
     private fun occurrence(
         routine: Routine,
         date: LocalDate,
-        originalDate: LocalDate,
         today: LocalDate,
+        change: OccurrenceOverride? = null,
         isExtra: Boolean = false,
     ): Occurrence {
+        val originalDate = change?.originalDate ?: date
         // What the user ticked off stands, even if a pause or blocker was added to that day later;
         // and an occurrence the user moved or added onto a day is never hidden by a pause or a block rule.
-        val answer = completions[routine.id to originalDate]?.status
-        val explicit = originalDate != date || isExtra
-        val pause = if (answer == null && !explicit) pauseOf(routine, date) else null
-        val blockedBy = if (answer == null && !explicit && pause == null) blockers(routine, date) else emptyList()
+        val completion = completions[routine.id to originalDate]
+        val answer = completion?.status
+        val explicit = change != null || isExtra
+        val derived = answer == null && !explicit
+        val pause = if (derived) pauseOf(routine, date) else null
+        val blockedBy = if (derived && pause == null) blockers(routine, date) else emptyList()
         val status =
             when {
                 pause != null -> OccurrenceStatus.PAUSED
                 blockedBy.isNotEmpty() -> OccurrenceStatus.BLOCKED
-                !routine.checkable -> OccurrenceStatus.HAPPENS
-                answer == CompletionStatus.DONE -> OccurrenceStatus.DONE
-                answer == CompletionStatus.SKIPPED -> OccurrenceStatus.SKIPPED
-                date.isBefore(today) -> OccurrenceStatus.MISSED
-                else -> OccurrenceStatus.OPEN
+                else -> answered(routine, answer, date.isBefore(today))
             }
-        return Occurrence(routine, date, status, blockedBy, originalDate, pause, isExtra)
+        return Occurrence(
+            routine,
+            date,
+            status,
+            blockedBy,
+            originalDate,
+            pause,
+            isExtra,
+            change?.newTime,
+            completion?.doneAt?.takeIf { status == OccurrenceStatus.DONE },
+        )
     }
+
+    /** The status of an occurrence that takes place: as ticked off, missed if past, or open. */
+    private fun answered(
+        routine: Routine,
+        answer: CompletionStatus?,
+        past: Boolean,
+    ): OccurrenceStatus =
+        when {
+            !routine.checkable -> OccurrenceStatus.HAPPENS
+            answer == CompletionStatus.DONE -> OccurrenceStatus.DONE
+            answer == CompletionStatus.SKIPPED -> OccurrenceStatus.SKIPPED
+            past -> OccurrenceStatus.MISSED
+            else -> OccurrenceStatus.OPEN
+        }
 }

@@ -13,6 +13,7 @@ import androidx.compose.ui.res.stringResource
 import de.steppicrew.kladde.model.Occurrence
 import de.steppicrew.kladde.model.OccurrenceStatus
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -23,7 +24,8 @@ import java.time.format.FormatStyle
 @Composable
 internal fun OccurrenceMenu(
     occurrence: Occurrence,
-    onMove: (LocalDate) -> Unit,
+    /** The new day and, for a timed routine, a new time (null: its usual one). */
+    onMove: (LocalDate, LocalTime?) -> Unit,
     onCancel: () -> Unit,
     onRestore: () -> Unit,
     onAddExtra: (LocalDate) -> Unit,
@@ -33,16 +35,35 @@ internal fun OccurrenceMenu(
 ) {
     // Which date is being picked for: a move, an extra day, or none.
     var picking by remember { mutableStateOf<((LocalDate) -> Unit)?>(null) }
-    picking?.let { action ->
-        DateDialog(
-            initial = occurrence.date,
+    // A timed routine's move asks for the time after the day.
+    var movingTo by remember { mutableStateOf<LocalDate?>(null) }
+    val time = occurrence.time
+    movingTo?.let { date ->
+        TimeDialog(
+            initial = time ?: LocalTime.NOON,
             onPick = {
-                action(it)
+                onMove(date, it.takeIf { picked -> picked != occurrence.plannedTime })
                 onDismiss()
             },
             onDismiss = onDismiss,
         )
         return
+    }
+    picking?.let { action ->
+        DateDialog(initial = occurrence.date, onPick = action, onDismiss = onDismiss)
+        return
+    }
+    val move = { date: LocalDate ->
+        if (time != null && !occurrence.isExtra) {
+            movingTo = date
+        } else {
+            onMove(date, null)
+            onDismiss()
+        }
+    }
+    val addExtra = { date: LocalDate ->
+        onAddExtra(date)
+        onDismiss()
     }
     val changed = occurrence.isMoved || occurrence.status == OccurrenceStatus.CANCELLED
 
@@ -56,7 +77,7 @@ internal fun OccurrenceMenu(
         title = { Text("${occurrence.routine.title}, ${occurrence.date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))}") },
         text = {
             Column {
-                TextButton(onClick = { picking = onMove }) { Text(stringResource(R.string.routines_move)) }
+                TextButton(onClick = { picking = move }) { Text(stringResource(R.string.routines_move)) }
                 if (occurrence.isExtra) {
                     TextButton(onClick = then(onRemoveExtra)) { Text(stringResource(R.string.routines_remove_extra)) }
                 } else {
@@ -65,7 +86,7 @@ internal fun OccurrenceMenu(
                     }
                     if (changed) TextButton(onClick = then(onRestore)) { Text(stringResource(R.string.routines_restore)) }
                 }
-                TextButton(onClick = { picking = onAddExtra }) { Text(stringResource(R.string.routines_add_extra)) }
+                TextButton(onClick = { picking = addExtra }) { Text(stringResource(R.string.routines_add_extra)) }
                 TextButton(onClick = then(onEdit)) { Text(stringResource(R.string.routines_edit)) }
             }
         },

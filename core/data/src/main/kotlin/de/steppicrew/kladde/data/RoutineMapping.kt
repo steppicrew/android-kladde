@@ -54,6 +54,7 @@ internal fun RoutineCompletionEntity.toModel() =
         status = CompletionStatus.valueOf(status),
         recordedAt = Instant.ofEpochMilli(recordedAt),
         zone = ZoneId.of(zone),
+        doneAt = Instant.ofEpochMilli(doneAt ?: recordedAt),
     )
 
 internal fun RoutineCompletion.toEntity() =
@@ -63,6 +64,7 @@ internal fun RoutineCompletion.toEntity() =
         status = status.name,
         recordedAt = recordedAt.toEpochMilli(),
         zone = zone.id,
+        doneAt = doneAt.toEpochMilli().takeIf { doneAt != recordedAt },
     )
 
 internal fun RoutinePauseEntity.toModel() =

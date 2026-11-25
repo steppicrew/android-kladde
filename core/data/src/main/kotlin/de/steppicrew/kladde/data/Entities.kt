@@ -100,6 +100,8 @@ internal data class RoutineCompletionEntity(
     val status: String,
     @ColumnInfo(name = "recorded_at") val recordedAt: Long,
     val zone: String,
+    /** When it was done, if set apart from recorded_at. */
+    @ColumnInfo(name = "done_at") val doneAt: Long? = null,
 )
 
 /** "routine_id doesn't take place on days when blocker_id does." */
@@ -115,6 +117,8 @@ internal data class OccurrenceOverrideEntity(
     @ColumnInfo(name = "routine_id") val routineId: String,
     @ColumnInfo(name = "original_date") val originalDate: String,
     @ColumnInfo(name = "new_date") val newDate: String?,
+    /** "HH:mm", or null to keep the routine's time. */
+    @ColumnInfo(name = "new_time") val newTime: String? = null,
 )
 
 /** A pause from–until (ISO dates, until null = open); routine_ids joined by [SUB_TYPE_SEPARATOR], empty = all. */

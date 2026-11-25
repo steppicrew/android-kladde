@@ -156,6 +156,28 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun `10 to 11 keeps moves and answers, with no new time and no separate done time`() {
+        helper.createDatabase(DB, 10).use { db ->
+            db.execSQL("INSERT INTO occurrence_overrides (routine_id, original_date, new_date) VALUES ('r1', '2026-11-25', '2026-11-26')")
+            db.execSQL(
+                "INSERT INTO routine_completions (routine_id, date, status, recorded_at, zone) " +
+                    "VALUES ('r1', '2026-11-24', 'DONE', 5, 'Europe/Berlin')",
+            )
+        }
+
+        helper.runMigrationsAndValidate(DB, 11, true).use { db ->
+            db.query("SELECT new_time FROM occurrence_overrides").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(null, cursor.getString(0))
+            }
+            db.query("SELECT done_at FROM routine_completions").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(true, cursor.isNull(0))
+            }
+        }
+    }
+
     private fun androidx.sqlite.db.SupportSQLiteDatabase.count(table: String): Int =
         query("SELECT COUNT(*) FROM $table").use { cursor ->
             cursor.moveToFirst()

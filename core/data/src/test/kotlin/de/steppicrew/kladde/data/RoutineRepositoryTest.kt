@@ -145,6 +145,30 @@ class RoutineRepositoryTest {
     }
 
     @Test
+    fun `a move keeps a new time, also on the same day`() {
+        routines.change(sport.id, day, day.plusDays(1), LocalTime.of(9, 0))
+        routines.change(sport.id, day.plusDays(2), day.plusDays(2), LocalTime.of(20, 0))
+
+        assertEquals(
+            listOf(
+                OccurrenceOverride(sport.id, day, day.plusDays(1), LocalTime.of(9, 0)),
+                OccurrenceOverride(sport.id, day.plusDays(2), day.plusDays(2), LocalTime.of(20, 0)),
+            ),
+            overrides().sortedBy { it.originalDate },
+        )
+    }
+
+    @Test
+    fun `when it was done is stored apart from when it was entered`() {
+        val entered = Instant.parse("2026-11-25T19:00:00Z")
+        val earlier = Instant.parse("2026-11-25T17:30:00Z")
+        routines.complete(RoutineCompletion(sport.id, day, CompletionStatus.DONE, entered, zone, earlier))
+        routines.complete(RoutineCompletion(sport.id, day.plusDays(1), CompletionStatus.DONE, entered, zone))
+
+        assertEquals(listOf(earlier, entered), completions().sortedBy { it.date }.map { it.doneAt })
+    }
+
+    @Test
     fun `moving an occurrence back to its day takes the move back`() {
         routines.change(sport.id, day, day.plusDays(1))
         routines.change(sport.id, day, day)
