@@ -58,4 +58,9 @@
     <string name="routines_pause_until_before_from">Until lies before from</string>
     <string name="routines_status_paused">Paused</string>
     <string name="routines_status_paused_for">Paused: %1$s</string>
+    <string name="routines_monthly_weekdays">Monthly on certain weekdays</string>
+    <string name="routines_monthly_days">Monthly on certain days</string>
+    <string name="routines_nth_last">Last</string>
+    <string name="routines_last_day">Last day</string>
+    <string name="routines_month_days_hint">A month without the day, like the 31st in November, is skipped</string>
 </resources>

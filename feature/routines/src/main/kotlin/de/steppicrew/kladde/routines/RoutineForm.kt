@@ -1,6 +1,7 @@
 package de.steppicrew.kladde.routines
 
 import de.steppicrew.kladde.model.BlockRule
+import de.steppicrew.kladde.model.NthWeekday
 import de.steppicrew.kladde.model.Recurrence
 import de.steppicrew.kladde.model.Routine
 import java.time.DayOfWeek
@@ -13,6 +14,12 @@ internal enum class Repeat {
     EVERY_DAY,
     WEEKDAYS,
     EVERY_N_DAYS,
+
+    /** E.g. the 1st and 3rd Monday: places in the month ([RoutineDraft.nths]) times weekdays. */
+    MONTHLY_WEEKDAYS,
+
+    /** E.g. the 1st and 15th ([RoutineDraft.monthDays]). */
+    MONTHLY_DAYS,
 }
 
 /** What the routine form holds while it is being filled in. */
@@ -21,6 +28,10 @@ internal data class RoutineDraft(
     val repeat: Repeat = Repeat.EVERY_DAY,
     val days: Set<DayOfWeek> = emptySet(),
     val interval: String = "2",
+    /** For [Repeat.MONTHLY_WEEKDAYS]: 1–4, or [NthWeekday.LAST]; combined with every one of [days]. */
+    val nths: Set<Int> = setOf(1),
+    /** For [Repeat.MONTHLY_DAYS]: 1–31, or [Recurrence.MonthlyByDay.LAST_DAY]. */
+    val monthDays: Set<Int> = emptySet(),
     val time: LocalTime? = null,
     val checkable: Boolean = true,
     /** The ids of the routines this one gives way to. */
@@ -38,6 +49,13 @@ internal data class RoutineDraft(
                         .toIntOrNull()
                         ?.takeIf { it in 2..MAX_INTERVAL }
                         ?.let(Recurrence::EveryNDays)
+                Repeat.MONTHLY_WEEKDAYS ->
+                    nths
+                        .flatMap { n -> days.map { NthWeekday(n, it) } }
+                        .toSet()
+                        .takeIf { it.isNotEmpty() }
+                        ?.let(Recurrence::MonthlyByWeekday)
+                Repeat.MONTHLY_DAYS -> monthDays.takeIf { it.isNotEmpty() }?.let(Recurrence::MonthlyByDay)
             }
 
     val isComplete: Boolean get() = title.isNotBlank() && recurrence != null
@@ -77,6 +95,14 @@ internal data class RoutineDraft(
                 Recurrence.Daily -> RoutineDraft(routine.title, Repeat.EVERY_DAY)
                 is Recurrence.Weekly -> RoutineDraft(routine.title, Repeat.WEEKDAYS, days = recurrence.days)
                 is Recurrence.EveryNDays -> RoutineDraft(routine.title, Repeat.EVERY_N_DAYS, interval = recurrence.interval.toString())
+                is Recurrence.MonthlyByWeekday ->
+                    RoutineDraft(
+                        routine.title,
+                        Repeat.MONTHLY_WEEKDAYS,
+                        days = recurrence.days.mapTo(HashSet()) { it.day },
+                        nths = recurrence.days.mapTo(HashSet()) { it.n },
+                    )
+                is Recurrence.MonthlyByDay -> RoutineDraft(routine.title, Repeat.MONTHLY_DAYS, monthDays = recurrence.days)
             }.copy(
                 time = routine.time,
                 checkable = routine.checkable,

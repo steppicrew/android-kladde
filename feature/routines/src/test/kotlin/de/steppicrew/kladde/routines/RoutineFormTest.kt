@@ -1,6 +1,7 @@
 package de.steppicrew.kladde.routines
 
 import de.steppicrew.kladde.model.BlockRule
+import de.steppicrew.kladde.model.NthWeekday
 import de.steppicrew.kladde.model.Recurrence
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -66,5 +67,27 @@ class RoutineFormTest {
         val rules = listOf(BlockRule("r1", "r2"), BlockRule("r1", "r3"), BlockRule("r2", "r3"))
 
         assertEquals(setOf("r2", "r3"), RoutineDraft.of(sport, rules).blockers)
+    }
+
+    @Test
+    fun `monthly on the 1st and 3rd Monday combines places and weekdays`() {
+        val draft = RoutineDraft("Treffen", Repeat.MONTHLY_WEEKDAYS, days = setOf(DayOfWeek.MONDAY), nths = setOf(1, 3))
+
+        assertEquals(
+            Recurrence.MonthlyByWeekday(setOf(NthWeekday(1, DayOfWeek.MONDAY), NthWeekday(3, DayOfWeek.MONDAY))),
+            draft.recurrence,
+        )
+        assertEquals(draft, RoutineDraft.of(draft.toRoutine("r1", today, now)!!))
+        assertFalse(draft.copy(nths = emptySet()).isComplete)
+        assertFalse(draft.copy(days = emptySet()).isComplete)
+    }
+
+    @Test
+    fun `monthly on days of the month`() {
+        val draft = RoutineDraft("Miete", Repeat.MONTHLY_DAYS, monthDays = setOf(1, Recurrence.MonthlyByDay.LAST_DAY))
+
+        assertEquals(Recurrence.MonthlyByDay(setOf(1, -1)), draft.recurrence)
+        assertEquals(draft, RoutineDraft.of(draft.toRoutine("r1", today, now)!!))
+        assertFalse(draft.copy(monthDays = emptySet()).isComplete)
     }
 }

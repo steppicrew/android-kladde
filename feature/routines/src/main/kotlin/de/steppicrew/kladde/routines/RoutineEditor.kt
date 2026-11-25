@@ -40,6 +40,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import de.steppicrew.kladde.model.NthWeekday
+import de.steppicrew.kladde.model.Recurrence
 import de.steppicrew.kladde.model.Routine
 import java.time.DayOfWeek
 import java.time.LocalTime
@@ -106,6 +108,8 @@ private fun Repeat.label(): Int =
         Repeat.EVERY_DAY -> R.string.routines_every_day
         Repeat.WEEKDAYS -> R.string.routines_weekdays
         Repeat.EVERY_N_DAYS -> R.string.routines_every_n_days
+        Repeat.MONTHLY_WEEKDAYS -> R.string.routines_monthly_weekdays
+        Repeat.MONTHLY_DAYS -> R.string.routines_monthly_days
     }
 
 @Composable
@@ -156,6 +160,8 @@ private val DraftSaver =
                 it.time?.toString(),
                 it.checkable,
                 it.blockers.toList(),
+                it.nths.toList(),
+                it.monthDays.toList(),
             )
         },
         restore = { values ->
@@ -168,6 +174,8 @@ private val DraftSaver =
                 time = (values[4] as String?)?.let(LocalTime::parse),
                 checkable = values[5] as Boolean,
                 blockers = (values[6] as List<String>).toSet(),
+                nths = (values[7] as List<Int>).toSet(),
+                monthDays = (values[8] as List<Int>).toSet(),
             )
         },
     )
@@ -202,16 +210,19 @@ private fun RepeatFields(
             }
         }
         when (draft.repeat) {
-            Repeat.WEEKDAYS ->
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    for (day in DayOfWeek.entries) {
-                        FilterChip(
-                            selected = day in draft.days,
-                            onClick = { onChange(draft.copy(days = if (day in draft.days) draft.days - day else draft.days + day)) },
-                            label = { Text(day.displayName(TextStyle.SHORT)) },
-                        )
-                    }
+            Repeat.WEEKDAYS -> WeekdayChips(draft.days) { onChange(draft.copy(days = it)) }
+            Repeat.MONTHLY_WEEKDAYS -> {
+                val last = stringResource(R.string.routines_nth_last)
+                ToggleChips(NTHS, draft.nths, { if (it == NthWeekday.LAST) last else "$it." }) { onChange(draft.copy(nths = it)) }
+                WeekdayChips(draft.days) { onChange(draft.copy(days = it)) }
+            }
+            Repeat.MONTHLY_DAYS -> {
+                val last = stringResource(R.string.routines_last_day)
+                ToggleChips(MONTH_DAYS, draft.monthDays, { if (it == Recurrence.MonthlyByDay.LAST_DAY) last else "$it." }) {
+                    onChange(draft.copy(monthDays = it))
                 }
+                Text(stringResource(R.string.routines_month_days_hint), style = MaterialTheme.typography.bodySmall)
+            }
             Repeat.EVERY_N_DAYS ->
                 OutlinedTextField(
                     value = draft.interval,
@@ -282,6 +293,35 @@ private fun BlockerFields(
                     label = { Text(choice.title) },
                 )
             }
+        }
+    }
+}
+
+private val NTHS = (1..NthWeekday.MAX_N).toList() + NthWeekday.LAST
+private val MONTH_DAYS = (1..Recurrence.MonthlyByDay.MAX_DAY).toList() + Recurrence.MonthlyByDay.LAST_DAY
+
+@Composable
+private fun WeekdayChips(
+    selected: Set<DayOfWeek>,
+    onChange: (Set<DayOfWeek>) -> Unit,
+) = ToggleChips(DayOfWeek.entries, selected, { it.displayName(TextStyle.SHORT) }, onChange)
+
+/** Chips that each add or remove their option from [selected]. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun <T> ToggleChips(
+    options: List<T>,
+    selected: Set<T>,
+    label: (T) -> String,
+    onChange: (Set<T>) -> Unit,
+) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        for (option in options) {
+            FilterChip(
+                selected = option in selected,
+                onClick = { onChange(if (option in selected) selected - option else selected + option) },
+                label = { Text(label(option)) },
+            )
         }
     }
 }

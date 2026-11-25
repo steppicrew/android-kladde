@@ -97,4 +97,21 @@ class RoutinePauseTest {
         val moved = plan.day(wednesday.plusDays(2), wednesday).filter { it.routine.id == sport.id }
         assertEquals(listOf(OccurrenceStatus.PAUSED, OccurrenceStatus.OPEN), moved.map { it.status })
     }
+
+    @Test
+    fun `overlapping pauses for different routines each pause their own`() {
+        val rued = RoutinePause("p1", wednesday, wednesday.plusDays(14), setOf(ruedersdorf.id), "Rüdersdorf zu")
+        val sportBreak = RoutinePause("p2", wednesday.plusDays(1), wednesday.plusDays(4), setOf(sport.id), "Knie")
+        val plan = plan(rued, sportBreak)
+
+        // Wednesday: only Rüdersdorf is paused, so it blocks nothing and Sport is on.
+        assertEquals(rued, plan.of(wednesday, ruedersdorf).pausedBy)
+        assertEquals(OccurrenceStatus.OPEN, plan.of(wednesday).status)
+        // Thursday to Sunday: both pauses at once, each for its own routine.
+        assertEquals(sportBreak, plan.of(wednesday.plusDays(2)).pausedBy)
+        assertEquals(OccurrenceStatus.OPEN, plan.of(wednesday.plusDays(2), reading).status)
+        // After the knee pause, Sport is back while Rüdersdorf stays paused.
+        assertEquals(OccurrenceStatus.OPEN, plan.of(wednesday.plusDays(5)).status)
+        assertEquals(OccurrenceStatus.PAUSED, plan.of(wednesday.plusWeeks(1), ruedersdorf).status)
+    }
 }
