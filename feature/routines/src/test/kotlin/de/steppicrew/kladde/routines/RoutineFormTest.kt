@@ -44,9 +44,9 @@ class RoutineFormTest {
         val earlier = RoutineDraft("Sport", Repeat.EVERY_N_DAYS, interval = "2").toRoutine("r1", today.minusDays(10), Instant.EPOCH)!!
         val event = today.plusDays(2)
 
-        val renamed = RoutineDraft.of(earlier).copy(title = "Workout").toRoutine("new", today, now, earlier, event)!!
-        val rescheduled = RoutineDraft.of(earlier).copy(interval = "3").toRoutine("new", today, now, earlier, event)!!
-        val retimed = RoutineDraft.of(earlier).copy(time = LocalTime.of(7, 0)).toRoutine("new", today, now, earlier, event)!!
+        val renamed = RoutineDraft.of(earlier).copy(title = "Workout").toRoutine("new", event, now, earlier)!!
+        val rescheduled = RoutineDraft.of(earlier).copy(interval = "3").toRoutine("new", event, now, earlier)!!
+        val retimed = RoutineDraft.of(earlier).copy(time = LocalTime.of(7, 0)).toRoutine("new", event, now, earlier)!!
 
         assertEquals(earlier.copy(title = "Workout"), renamed)
         assertEquals(earlier.withSchedule(Recurrence.EveryNDays(3), null, event), rescheduled)
@@ -101,7 +101,7 @@ class RoutineFormTest {
         assertTrue(pills.ignoresPauses)
         assertEquals(RoutineDraft("Tabletten", ignoresPauses = true), RoutineDraft.of(pills))
 
-        val off = RoutineDraft.of(pills).copy(ignoresPauses = false).toRoutine("new", today, now, pills, today.plusDays(3))!!
+        val off = RoutineDraft.of(pills).copy(ignoresPauses = false).toRoutine("new", today.plusDays(3), now, pills)!!
         assertEquals(pills.copy(ignoresPauses = false), off)
     }
 
@@ -120,5 +120,23 @@ class RoutineFormTest {
 
         assertEquals(setOf("Arbeit"), routine.groups)
         assertEquals(setOf("Arbeit"), RoutineDraft.of(routine).groups)
+    }
+
+    @Test
+    fun `picking an earlier "Gilt ab" alone moves the current schedule's start back`() {
+        // Like Eileen: Thursdays from the 25th, then Wednesday and Thursday from the 26th.
+        val thursdays =
+            RoutineDraft("Eileen", Repeat.WEEKDAYS, days = setOf(java.time.DayOfWeek.THURSDAY)).toRoutine("e", today, now)!!
+        val both = setOf(java.time.DayOfWeek.WEDNESDAY, java.time.DayOfWeek.THURSDAY)
+        val changed = RoutineDraft.of(thursdays).copy(days = both).toRoutine("x", today.plusDays(1), now, thursdays)!!
+        assertEquals(today.plusDays(1), changed.startDate)
+
+        val moved = RoutineDraft.of(changed).toRoutine("x", today.minusDays(2), now, changed, fromPicked = true)!!
+        assertEquals(today, moved.startDate)
+        assertEquals(emptyList<de.steppicrew.kladde.model.ScheduleVersion>(), moved.earlier)
+        assertTrue(moved.occursOn(today))
+
+        // Opened at an earlier event but not picked: a rename leaves the schedule alone.
+        assertEquals(changed, RoutineDraft.of(changed).toRoutine("x", today.minusDays(2), now, changed))
     }
 }

@@ -51,7 +51,8 @@ internal fun RoutineEditor(
     blockerChoices: List<Routine>,
     /** The groups other routines have, to pick from. */
     groupChoices: List<String>,
-    onSave: (RoutineDraft, from: LocalDate) -> Unit,
+    /** With the day changes apply from, and whether the user picked it. */
+    onSave: (RoutineDraft, from: LocalDate, fromPicked: Boolean) -> Unit,
     onDelete: () -> Unit,
     onCancel: () -> Unit,
 ) {
@@ -82,7 +83,9 @@ internal fun RoutineEditor(
             GroupFields(draft, groupChoices) { draft = it }
             BlockerFields(draft, blockerChoices) { draft = it }
         }
-        SaveBar(draft.isComplete, !isNew, onSave = { onSave(draft, LocalDate.parse(from)) }, onCancel = onCancel, onDelete = onDelete)
+        SaveBar(draft.isComplete, !isNew, onSave = {
+            onSave(draft, LocalDate.parse(from), from != scheduleFrom.toString())
+        }, onCancel = onCancel, onDelete = onDelete)
     }
     val close = { picking = null }
     when (picking) {
@@ -162,7 +165,7 @@ private fun RoutineEditorPreview() {
             scheduleFrom = LocalDate.of(2026, 11, 25),
             blockerChoices = emptyList(),
             groupChoices = listOf("Arbeit", "Privat"),
-            onSave = { _, _ -> },
+            onSave = { _, _, _ -> },
             onDelete = {},
             onCancel = {},
         )

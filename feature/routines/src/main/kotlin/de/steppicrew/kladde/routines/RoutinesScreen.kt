@@ -196,11 +196,24 @@ private fun EditRoutine(
         // What it can give way to: the others, bar those that would close a loop.
         blockerChoices = routines.filter { it.id != id && !wouldCycle(id, it.id, rules) },
         groupChoices = routines.flatMap { it.groups }.distinct(),
-        onSave = { draft, appliesFrom ->
-            draft.toRoutine(Ids.newId(), LocalDate.now(), Instant.now(), routine, appliesFrom)?.let { saved ->
-                val blockers = draft.blockers.filterTo(HashSet()) { blocker -> routines.any { it.id == blocker } }
-                io { repository.save(saved, blockers) }
-            }
+        onSave = { draft, appliesFrom, picked ->
+            draft
+                .toRoutine(
+                    Ids.newId(),
+                    if (routine ==
+                        null
+                    ) {
+                        LocalDate.now()
+                    } else {
+                        appliesFrom
+                    },
+                    Instant.now(),
+                    routine,
+                    picked,
+                )?.let { saved ->
+                    val blockers = draft.blockers.filterTo(HashSet()) { blocker -> routines.any { it.id == blocker } }
+                    io { repository.save(saved, blockers) }
+                }
             onDone()
         },
         onDelete = {
