@@ -12,6 +12,8 @@ data class ExternalSource(
     val externalId: String,
     /** The sender's revision; a stored point only ever moves to a higher one. */
     val rev: Long,
+    /** The entry as the sender sent it (ADX JSON), so attrs and fields we don't map aren't lost. */
+    val raw: String? = null,
 )
 
 /**

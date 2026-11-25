@@ -1,0 +1,81 @@
+package de.steppicrew.kladde.data
+
+import de.steppicrew.kladde.model.DataPoint
+import de.steppicrew.kladde.model.ExternalSource
+import de.steppicrew.kladde.model.Tracker
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+
+/** Blocking calls run on the caller's thread; never call them from the main thread. */
+class TrackerRepository(
+    private val db: KladdeDatabase,
+) {
+    fun observeAll(): Flow<List<Tracker>> = db.trackers().observeAll().map { list -> list.map { it.toModel() } }
+
+    fun all(): List<Tracker> = db.trackers().all().map { it.toModel() }
+
+    fun find(id: String): Tracker? = db.trackers().find(id)?.toModel()
+
+    fun findBySource(
+        packageName: String,
+        stream: String,
+    ): Tracker? = db.trackers().findBySource(packageName, stream)?.toModel()
+
+    fun save(tracker: Tracker) = db.trackers().save(tracker.toEntity())
+}
+
+class DataPointRepository(
+    private val db: KladdeDatabase,
+) {
+    fun observeRecent(limit: Int): Flow<List<DataPoint>> = db.dataPoints().observeRecent(limit).map { list -> list.map { it.toModel() } }
+
+    /** The rev stored for another app's entry, including a tombstone's, or null if it was never seen. */
+    fun externalRev(
+        packageName: String,
+        stream: String,
+        externalId: String,
+    ): Long? = db.dataPoints().findBySource(packageName, stream, externalId)?.sourceRev
+
+    /**
+     * Stores another app's entry in place of what is stored for the same source key.
+     * The stored point keeps its own id; [point]'s id is used only for a new one.
+     */
+    fun upsertExternal(point: DataPoint) {
+        val source = requireNotNull(point.source) { "not an external data point" }
+        db.runInTransaction {
+            val existing = db.dataPoints().findBySource(source.packageName, source.stream, source.externalId)
+            db.dataPoints().save(point.copy(id = existing?.id ?: point.id).toEntity())
+        }
+    }
+
+    /** Turns another app's entry into a tombstone that keeps [source]'s rev; values are cleared. */
+    fun deleteExternal(
+        newId: String,
+        trackerId: String,
+        source: ExternalSource,
+    ) {
+        db.runInTransaction {
+            val existing = db.dataPoints().findBySource(source.packageName, source.stream, source.externalId)
+            db.dataPoints().save(
+                DataPointEntity(
+                    id = existing?.id ?: newId,
+                    trackerId = existing?.trackerId ?: trackerId,
+                    at = existing?.at ?: 0L,
+                    zone = existing?.zone ?: "UTC",
+                    value = null,
+                    high = null,
+                    end = null,
+                    unit = null,
+                    subType = null,
+                    note = null,
+                    sourcePackage = source.packageName,
+                    sourceStream = source.stream,
+                    sourceId = source.externalId,
+                    sourceRev = source.rev,
+                    sourceRaw = null,
+                    deleted = true,
+                ),
+            )
+        }
+    }
+}

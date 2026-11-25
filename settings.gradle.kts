@@ -21,3 +21,5 @@ includeBuild("../app-adx")
 
 include(":app")
 include(":core:model")
+include(":core:data")
+include(":integration:adx")

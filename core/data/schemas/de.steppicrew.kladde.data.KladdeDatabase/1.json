@@ -1,0 +1,212 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "324e99310c7d51830251d82734100c0b",
+    "entities": [
+      {
+        "tableName": "trackers",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `type` TEXT NOT NULL, `unit` TEXT, `created_at` INTEGER NOT NULL, `sub_types` TEXT NOT NULL, `scale_min` INTEGER, `scale_max` INTEGER, `source_package` TEXT, `source_stream` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unit",
+            "columnName": "unit",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subTypes",
+            "columnName": "sub_types",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scaleMin",
+            "columnName": "scale_min",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "scaleMax",
+            "columnName": "scale_max",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "sourcePackage",
+            "columnName": "source_package",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sourceStream",
+            "columnName": "source_stream",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_trackers_source_package_source_stream",
+            "unique": false,
+            "columnNames": [
+              "source_package",
+              "source_stream"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_trackers_source_package_source_stream` ON `${TABLE_NAME}` (`source_package`, `source_stream`)"
+          }
+        ]
+      },
+      {
+        "tableName": "data_points",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `tracker_id` TEXT NOT NULL, `at` INTEGER NOT NULL, `zone` TEXT NOT NULL, `value` REAL, `high` REAL, `end` INTEGER, `unit` TEXT, `sub_type` TEXT, `note` TEXT, `source_package` TEXT, `source_stream` TEXT, `source_id` TEXT, `source_rev` INTEGER, `source_raw` TEXT, `deleted` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "trackerId",
+            "columnName": "tracker_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "at",
+            "columnName": "at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "zone",
+            "columnName": "zone",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "value",
+            "columnName": "value",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "high",
+            "columnName": "high",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "end",
+            "columnName": "end",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "unit",
+            "columnName": "unit",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "subType",
+            "columnName": "sub_type",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sourcePackage",
+            "columnName": "source_package",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sourceStream",
+            "columnName": "source_stream",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sourceId",
+            "columnName": "source_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sourceRev",
+            "columnName": "source_rev",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "sourceRaw",
+            "columnName": "source_raw",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "deleted",
+            "columnName": "deleted",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_data_points_tracker_id_at",
+            "unique": false,
+            "columnNames": [
+              "tracker_id",
+              "at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_data_points_tracker_id_at` ON `${TABLE_NAME}` (`tracker_id`, `at`)"
+          },
+          {
+            "name": "index_data_points_source_package_source_stream_source_id",
+            "unique": true,
+            "columnNames": [
+              "source_package",
+              "source_stream",
+              "source_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_data_points_source_package_source_stream_source_id` ON `${TABLE_NAME}` (`source_package`, `source_stream`, `source_id`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '324e99310c7d51830251d82734100c0b')"
+    ]
+  }
+}

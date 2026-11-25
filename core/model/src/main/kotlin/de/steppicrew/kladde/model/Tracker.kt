@@ -25,7 +25,15 @@ data class Tracker(
     val subTypes: List<String> = emptyList(),
     val scaleMin: Long? = null,
     val scaleMax: Long? = null,
+    /** Set when another app proposed this tracker and the user created it from that proposal. */
+    val source: TrackerSource? = null,
 ) {
     /** This tracker with [subType] added at the end, or unchanged when it is null or known. */
     fun withSubType(subType: String?): Tracker = if (subType == null || subType in subTypes) this else copy(subTypes = subTypes + subType)
 }
+
+/** The app and stream a tracker was created for. */
+data class TrackerSource(
+    val packageName: String,
+    val stream: String,
+)
