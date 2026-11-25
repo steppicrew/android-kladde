@@ -94,4 +94,14 @@ class RoutineFormTest {
         assertEquals(draft, RoutineDraft.of(draft.toRoutine("r1", today, now)!!))
         assertFalse(draft.copy(monthDays = emptySet()).isComplete)
     }
+
+    @Test
+    fun `going on during pauses is kept through the form and is no schedule change`() {
+        val pills = RoutineDraft("Tabletten", ignoresPauses = true).toRoutine("r1", today, now)!!
+        assertTrue(pills.ignoresPauses)
+        assertEquals(RoutineDraft("Tabletten", ignoresPauses = true), RoutineDraft.of(pills))
+
+        val off = RoutineDraft.of(pills).copy(ignoresPauses = false).toRoutine("new", today, now, pills, today.plusDays(3))!!
+        assertEquals(pills.copy(ignoresPauses = false), off)
+    }
 }

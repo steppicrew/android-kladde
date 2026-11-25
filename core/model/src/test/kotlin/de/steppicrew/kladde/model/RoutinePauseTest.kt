@@ -114,4 +114,16 @@ class RoutinePauseTest {
         assertEquals(OccurrenceStatus.OPEN, plan.of(wednesday.plusDays(5)).status)
         assertEquals(OccurrenceStatus.PAUSED, plan.of(wednesday.plusWeeks(1), ruedersdorf).status)
     }
+
+    @Test
+    fun `a routine that goes on during pauses is paused only by a pause naming it`() {
+        val pills = Routine("pills", "Tabletten", Recurrence.Daily, start, LocalTime.of(8, 0), true, Instant.EPOCH, ignoresPauses = true)
+        val plan = RoutinePlan(listOf(pills, sport), emptyList(), pauses = listOf(vacation))
+
+        assertEquals(OccurrenceStatus.OPEN, plan.day(wednesday, wednesday).single { it.routine.id == pills.id }.status)
+        assertEquals(OccurrenceStatus.PAUSED, plan.day(wednesday, wednesday).single { it.routine.id == sport.id }.status)
+
+        val named = RoutinePlan(listOf(pills), emptyList(), pauses = listOf(vacation.copy(routineIds = setOf(pills.id))))
+        assertEquals(OccurrenceStatus.PAUSED, named.day(wednesday, wednesday).single().status)
+    }
 }

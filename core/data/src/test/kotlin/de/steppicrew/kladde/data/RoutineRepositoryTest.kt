@@ -70,6 +70,13 @@ class RoutineRepositoryTest {
     }
 
     @Test
+    fun `going on during pauses is stored`() {
+        routines.save(sport.copy(ignoresPauses = true))
+
+        assertTrue(all().single().ignoresPauses)
+    }
+
+    @Test
     fun `saving again replaces the routine`() {
         routines.save(sport)
         routines.save(sport.copy(title = "Workout", recurrence = Recurrence.EveryNDays(2), time = null))

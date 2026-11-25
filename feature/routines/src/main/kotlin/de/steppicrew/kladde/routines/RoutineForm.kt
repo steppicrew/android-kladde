@@ -34,6 +34,8 @@ internal data class RoutineDraft(
     val monthDays: Set<Int> = emptySet(),
     val time: LocalTime? = null,
     val checkable: Boolean = true,
+    /** Goes on during pauses for all routines ([Routine.ignoresPauses]). */
+    val ignoresPauses: Boolean = false,
     /** The ids of the routines this one gives way to. */
     val blockers: Set<String> = emptySet(),
 ) {
@@ -79,7 +81,7 @@ internal data class RoutineDraft(
                 editing.recurrence == recurrence && editing.time == time -> editing
                 else -> editing.withSchedule(recurrence, time, from)
             }
-        return scheduled.copy(title = title.trim(), checkable = checkable)
+        return scheduled.copy(title = title.trim(), checkable = checkable, ignoresPauses = ignoresPauses)
     }
 
     companion object {
@@ -105,6 +107,7 @@ internal data class RoutineDraft(
             }.copy(
                 time = routine.time,
                 checkable = routine.checkable,
+                ignoresPauses = routine.ignoresPauses,
                 blockers = rules.filter { it.routineId == routine.id }.mapTo(HashSet()) { it.blockerId },
             )
     }

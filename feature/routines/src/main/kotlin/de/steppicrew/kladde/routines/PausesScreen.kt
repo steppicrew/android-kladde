@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
@@ -23,7 +22,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -88,7 +86,12 @@ internal fun PausesScreen(
                     Text(pauseSummary(pause), style = MaterialTheme.typography.bodyLarge)
                     Text(
                         if (pause.routineIds.isEmpty()) {
-                            stringResource(R.string.routines_pause_all)
+                            val goOn = routines.filter { it.ignoresPauses }
+                            if (goOn.isEmpty()) {
+                                stringResource(R.string.routines_pause_all)
+                            } else {
+                                stringResource(R.string.routines_pause_all_but, goOn.joinToString(", ") { it.title })
+                            }
                         } else {
                             routines.filter { it.id in pause.routineIds }.joinToString(", ") { it.title }
                         },
@@ -148,8 +151,8 @@ private fun PauseEditor(
             )
             DatesFields(draft, onPick = { picking = it }) { draft = it }
             Column(Modifier.selectableGroup()) {
-                ScopeChoice(stringResource(R.string.routines_pause_all), draft.all) { draft = draft.copy(all = true) }
-                ScopeChoice(stringResource(R.string.routines_pause_some), !draft.all) { draft = draft.copy(all = false) }
+                Choice(stringResource(R.string.routines_pause_all), draft.all) { draft = draft.copy(all = true) }
+                Choice(stringResource(R.string.routines_pause_some), !draft.all) { draft = draft.copy(all = false) }
             }
             if (!draft.all) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -225,22 +228,6 @@ private fun DatesFields(
         Text(stringResource(R.string.routines_pause_open), Modifier.weight(1f))
         // The row handles the toggle, so screen readers announce one control.
         Switch(checked = until == null, onCheckedChange = null)
-    }
-}
-
-@Composable
-private fun ScopeChoice(
-    label: String,
-    selected: Boolean,
-    onSelect: () -> Unit,
-) {
-    Row(
-        Modifier.fillMaxWidth().selectable(selected = selected, onClick = onSelect, role = Role.RadioButton).padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        // The row handles the click, so screen readers announce one control.
-        RadioButton(selected = selected, onClick = null)
-        Text(label, Modifier.padding(start = 8.dp))
     }
 }
 

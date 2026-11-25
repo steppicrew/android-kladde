@@ -68,4 +68,7 @@
     <string name="routines_extra">Zusätzlich</string>
     <string name="routines_applies_from">Wiederholung und Uhrzeit gelten ab</string>
     <string name="routines_applies_from_hint">Die Tage davor bleiben, wie sie waren. Name, Abhaken und Bedingungen ändern sich überall.</string>
+    <string name="routines_ignores_pauses">Läuft in Pausen weiter</string>
+    <string name="routines_ignores_pauses_hint">Eine Pause für alle Routinen lässt sie aus, z. B. Tabletten im Urlaub. Eine Pause, die sie ausdrücklich nennt, pausiert sie trotzdem.</string>
+    <string name="routines_pause_all_but">Alle Routinen außer %1$s</string>
 </resources>

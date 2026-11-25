@@ -41,6 +41,11 @@ data class Routine(
     val createdAt: Instant,
     /** The schedules before [startDate], oldest first; the first one's start is the routine's. */
     val earlier: List<ScheduleVersion> = emptyList(),
+    /**
+     * Goes on during pauses for all routines, e.g. taking a medicine on vacation; a pause that
+     * names it still pauses it.
+     */
+    val ignoresPauses: Boolean = false,
 ) {
     private val current get() = ScheduleVersion(startDate, recurrence, time)
 

@@ -89,6 +89,7 @@ internal data class RoutineEntity(
     val time: String?,
     val checkable: Boolean,
     @ColumnInfo(name = "created_at") val createdAt: Long,
+    @ColumnInfo(name = "ignores_pauses", defaultValue = "0") val ignoresPauses: Boolean,
 )
 
 /** Done or skipped for one occurrence; the date is ISO yyyy-MM-dd, so text order is date order. */

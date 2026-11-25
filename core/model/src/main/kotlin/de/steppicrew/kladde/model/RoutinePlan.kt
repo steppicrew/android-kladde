@@ -26,7 +26,8 @@ data class RoutineExtra(
 
 /**
  * A pause, e.g. a vacation: from [from] to [until] (local dates, both included; null = until the
- * user ends it). It covers the routines in [routineIds], or all of them when that is empty.
+ * user ends it). It covers the routines in [routineIds], or when that is empty all of them but
+ * those that go on during pauses ([Routine.ignoresPauses]).
  */
 data class RoutinePause(
     val id: String,
@@ -40,9 +41,9 @@ data class RoutinePause(
     fun isOn(date: LocalDate): Boolean = !date.isBefore(from) && (until == null || !date.isAfter(until))
 
     fun covers(
-        routineId: String,
+        routine: Routine,
         date: LocalDate,
-    ): Boolean = isOn(date) && (routineIds.isEmpty() || routineId in routineIds)
+    ): Boolean = isOn(date) && if (routineIds.isEmpty()) !routine.ignoresPauses else routine.id in routineIds
 }
 
 /**
@@ -85,7 +86,7 @@ class RoutinePlan(
     private fun pauseOf(
         routine: Routine,
         date: LocalDate,
-    ): RoutinePause? = pauses.firstOrNull { it.covers(routine.id, date) }
+    ): RoutinePause? = pauses.firstOrNull { it.covers(routine, date) }
 
     /** Whether [routine] happens on [date]: moved there, or planned there, unchanged, not paused and not blocked. */
     private fun takesPlace(

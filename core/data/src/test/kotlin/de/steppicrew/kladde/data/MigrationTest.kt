@@ -139,6 +139,23 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun `9 to 10 keeps routines, which are paused as before`() {
+        helper.createDatabase(DB, 9).use { db ->
+            db.execSQL(
+                "INSERT INTO routines (id, title, rrule, start_date, time, checkable, created_at) " +
+                    "VALUES ('r1', 'Sport', 'FREQ=DAILY', '2026-11-25', '18:00', 1, 0)",
+            )
+        }
+
+        helper.runMigrationsAndValidate(DB, 10, true).use { db ->
+            db.query("SELECT ignores_pauses FROM routines").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+        }
+    }
+
     private fun androidx.sqlite.db.SupportSQLiteDatabase.count(table: String): Int =
         query("SELECT COUNT(*) FROM $table").use { cursor ->
             cursor.moveToFirst()

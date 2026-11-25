@@ -10,9 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -20,8 +18,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -32,7 +28,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -127,22 +122,6 @@ private fun Repeat.label(): Int =
         Repeat.MONTHLY_DAYS -> R.string.routines_monthly_days
     }
 
-@Composable
-private fun Choice(
-    label: String,
-    selected: Boolean,
-    onSelect: () -> Unit,
-) {
-    Row(
-        Modifier.fillMaxWidth().selectable(selected = selected, onClick = onSelect, role = Role.RadioButton).padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        // The row handles the click, so screen readers announce one control.
-        RadioButton(selected = selected, onClick = null)
-        Text(label, Modifier.padding(start = 8.dp))
-    }
-}
-
 /** Keeps a draft across rotation and process death as plain values. */
 private val DraftSaver =
     androidx.compose.runtime.saveable.listSaver<RoutineDraft, Any?>(
@@ -157,6 +136,7 @@ private val DraftSaver =
                 it.blockers.toList(),
                 it.nths.toList(),
                 it.monthDays.toList(),
+                it.ignoresPauses,
             )
         },
         restore = { values ->
@@ -171,6 +151,7 @@ private val DraftSaver =
                 blockers = (values[6] as List<String>).toSet(),
                 nths = (values[7] as List<Int>).toSet(),
                 monthDays = (values[8] as List<Int>).toSet(),
+                ignoresPauses = values[9] as Boolean,
             )
         },
     )
@@ -252,19 +233,9 @@ private fun TimeAndTicking(
                 TextButton(onClick = { onChange(draft.copy(time = null)) }) { Text(stringResource(R.string.routines_time_clear)) }
             }
         }
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .toggleable(draft.checkable, role = Role.Switch) { onChange(draft.copy(checkable = it)) }
-                .padding(vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.routines_checkable))
-                Text(stringResource(R.string.routines_checkable_hint), style = MaterialTheme.typography.bodySmall)
-            }
-            // The row handles the toggle, so screen readers announce one control.
-            Switch(checked = draft.checkable, onCheckedChange = null)
+        SwitchRow(R.string.routines_checkable, R.string.routines_checkable_hint, draft.checkable) { onChange(draft.copy(checkable = it)) }
+        SwitchRow(R.string.routines_ignores_pauses, R.string.routines_ignores_pauses_hint, draft.ignoresPauses) {
+            onChange(draft.copy(ignoresPauses = it))
         }
     }
 }

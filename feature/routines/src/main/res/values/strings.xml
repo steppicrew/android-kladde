@@ -68,4 +68,7 @@
     <string name="routines_extra">Extra</string>
     <string name="routines_applies_from">Repeat and time apply from</string>
     <string name="routines_applies_from_hint">The days before keep their schedule. Name, ticking off and conditions change throughout.</string>
+    <string name="routines_ignores_pauses">Go on during pauses</string>
+    <string name="routines_ignores_pauses_hint">A pause for all routines leaves it alone, e.g. a medicine on vacation. A pause that names it still pauses it.</string>
+    <string name="routines_pause_all_but">All routines except %1$s</string>
 </resources>

@@ -22,6 +22,7 @@ internal fun RoutineEntity.toModel(versions: List<ScheduleVersionEntity> = empty
             time = time?.let(LocalTime::parse),
             checkable = checkable,
             createdAt = Instant.ofEpochMilli(createdAt),
+            ignoresPauses = ignoresPauses,
             earlier =
                 versions.mapNotNull { version ->
                     Recurrence.fromRrule(version.rrule)?.let {
@@ -43,6 +44,7 @@ internal fun Routine.toEntity() =
         time = time?.toString(),
         checkable = checkable,
         createdAt = createdAt.toEpochMilli(),
+        ignoresPauses = ignoresPauses,
     )
 
 internal fun RoutineCompletionEntity.toModel() =
