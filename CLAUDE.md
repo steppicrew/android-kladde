@@ -56,7 +56,7 @@ backdoor. Hilt and SQLCipher are not wired yet (manual wiring in `KladdeApp`).
 | Health data import | Android Health Connect (optional, opt-in) |
 | Charts | (open) Vico or a small custom Compose canvas implementation |
 | Build | Gradle Kotlin DSL, version catalog (`gradle/libs.versions.toml`) |
-| Toolchain | Same as ADX: AGP 9.5, Gradle 9.6, JDK 21, compile/target SDK 37. AGP 9 compiles Kotlin itself, so Android modules apply no `kotlin-android` plugin; `kotlin-jvm` (2.2.20) is for `core/model` only |
+| Toolchain | Same as ADX: AGP 9.5, Gradle 9.6, JDK 21, target SDK 37 (compile SDK 37.2 here, 37.0 in ADX). AGP 9 compiles Kotlin itself, so Android modules apply no `kotlin-android` plugin; `kotlin-jvm` (2.2.20) is for `core/model` only |
 | Min SDK | (open) proposed 26 — set to 26 for now |
 | App integration | ADX receiver (`../android-apx`, composite build); see below |
 
@@ -367,18 +367,22 @@ Goal: work on "dumb" storage (plain WebDAV) without a smart server.
 - UI: Compose tests for critical flows (setup, unlock, quick-add, export).
 ## Commands
 
-JDK 21 is required for every Gradle call (the system default JDK 25 is rejected by
-Gradle 9.6). `../android-apx` must be checked out next to this repo: `settings.gradle.kts`
-pulls it in with `includeBuild`, so ADX changes are picked up without publishing.
+Machine-specific settings live in `.env` (not committed; copy `.env.sample`, which
+documents each one): `JAVA_HOME` (JDK 21 — the system default JDK 25 is rejected by
+Gradle 9.6), `ANDROID_HOME` (an SDK with `platforms;android-37.2`; compileSdk is 37.2
+because current AndroidX needs 37.1+), and `ADX_DIR` (the ADX checkout, default
+`../android-apx`, pulled in with `includeBuild`, so ADX changes are picked up without
+publishing). **Run Gradle through `./gw`**, which loads `.env` and then calls `./gradlew`.
+Put new local configuration in `.env` + `.env.sample`, not in shell exports or
+`local.properties` (which would override `ANDROID_HOME`).
 
 ```bash
-export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
-./gradlew assembleDebug                                   # build
-./gradlew test                                            # all unit tests
-./gradlew :core:model:test                                # pure JVM module
-./gradlew :integration:adx:testDebugUnitTest --tests '*KladdeAdxStoreTest*'   # one class
-./gradlew connectedAndroidTest                            # instrumented tests (device/emulator)
-./gradlew ktlintCheck detekt                              # lint
+./gw assembleDebug                                   # build
+./gw test                                            # all unit tests
+./gw :core:model:test                                # pure JVM module
+./gw :integration:adx:testDebugUnitTest --tests '*KladdeAdxStoreTest*'   # one class
+./gw connectedAndroidTest                            # instrumented tests (device/emulator)
+./gw ktlintCheck detekt                              # lint
 ```
 
 On the phone (see the `android-device-testing` skill), the debug build has a `cmd` extra,

@@ -7,7 +7,10 @@ plugins {
 
 android {
     namespace = "de.steppicrew.kladde"
-    compileSdk = 37
+    compileSdk {
+        // 37.1 or later: current AndroidX (Compose 1.13) needs it.
+        version = release(37) { minorApiLevel = 2 }
+    }
 
     defaultConfig {
         applicationId = "de.steppicrew.kladde"

@@ -1,0 +1,9 @@
+#!/bin/sh
+# Runs ./gradlew with the settings from .env (see .env.sample).
+dir=$(dirname "$0")
+if [ -f "$dir/.env" ]; then
+    set -a
+    . "$dir/.env"
+    set +a
+fi
+exec "$dir/gradlew" "$@"

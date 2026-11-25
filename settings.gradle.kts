@@ -16,8 +16,19 @@ dependencyResolutionManagement {
 
 rootProject.name = "android-kladde"
 
-// ADX is built from source next to this repo; its artifacts replace the de.steppicrew.adx dependencies.
-includeBuild("../android-apx")
+// ADX is built from source; its artifacts replace the de.steppicrew.adx dependencies.
+// Where it lives comes from ADX_DIR in the environment or in .env (see .env.sample).
+val adxDir =
+    System.getenv("ADX_DIR")
+        ?: file(".env")
+            .takeIf { it.isFile }
+            ?.readLines()
+            ?.map { it.trim() }
+            ?.firstOrNull { it.startsWith("ADX_DIR=") }
+            ?.substringAfter('=')
+            ?.trim('"', '\'')
+        ?: "../android-apx"
+includeBuild(adxDir)
 
 include(":app")
 include(":core:model")
