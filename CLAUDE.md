@@ -130,7 +130,7 @@ usable on the phone before the next:**
 1. Routines with days and times, and a 7-day view (yesterday, today, the next 6 days) in a
    "Routinen" tab next to "Einträge". **Built.**
 2. Conditions: "not on days with …" — a routine drops out on days another routine happens
-   (block rules below, `SAME_DAY`, `DROP` only).
+   (block rules below, `SAME_DAY`, `DROP` only). **Built.**
 3. Single days: move one occurrence to another date, or cancel it ("Diesmal verschieben auf…",
    "Diesmal absagen"). Conditions follow the moved/cancelled dates automatically.
 4. Vacations: a pause from–until for **all routines by default**, or only chosen ones.
