@@ -2,6 +2,8 @@ package de.steppicrew.kladde.adx
 
 import androidx.test.core.app.ApplicationProvider
 import de.steppicrew.adx.AdxOp
+import de.steppicrew.adx.AdxRevRule
+import de.steppicrew.adx.AdxStatus
 import de.steppicrew.adx.AdxStreamDecision
 import de.steppicrew.adx.AdxStreamProposal
 import de.steppicrew.adx.receiver.AdxBusyException
@@ -108,6 +110,16 @@ class KladdeAdxStoreTest {
 
         assertTrue(recent().isEmpty())
         assertEquals(2L, store.currentRev(sender, grant, "e1"))
+    }
+
+    @Test
+    fun `a delete for an unseen id leaves a tombstone a late upsert can't overwrite`() {
+        // A sender that counts and undoes before its outbox runs sends only the delete.
+        store.delete(sender, grant, AdxOp.delete("drinks.beer", "e1", 2))
+
+        assertTrue(recent().isEmpty())
+        assertEquals(2L, store.currentRev(sender, grant, "e1"))
+        assertEquals(AdxStatus.STALE, AdxRevRule.decide(store.currentRev(sender, grant, "e1"), 1))
     }
 
     @Test
