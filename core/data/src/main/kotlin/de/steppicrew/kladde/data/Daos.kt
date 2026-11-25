@@ -70,3 +70,33 @@ internal interface DataPointDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun save(point: DataPointEntity)
 }
+
+@Dao
+internal interface RoutineDao {
+    @Query("SELECT * FROM routines ORDER BY title")
+    fun observeAll(): Flow<List<RoutineEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun save(routine: RoutineEntity)
+
+    @Query("DELETE FROM routines WHERE id = :id")
+    fun delete(id: String)
+
+    @Query("SELECT * FROM routine_completions WHERE date BETWEEN :from AND :to")
+    fun observeCompletions(
+        from: String,
+        to: String,
+    ): Flow<List<RoutineCompletionEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun saveCompletion(completion: RoutineCompletionEntity)
+
+    @Query("DELETE FROM routine_completions WHERE routine_id = :routineId AND date = :date")
+    fun deleteCompletion(
+        routineId: String,
+        date: String,
+    )
+
+    @Query("DELETE FROM routine_completions WHERE routine_id = :routineId")
+    fun deleteCompletions(routineId: String)
+}

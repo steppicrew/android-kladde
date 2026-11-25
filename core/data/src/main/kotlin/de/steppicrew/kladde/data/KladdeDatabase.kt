@@ -8,10 +8,16 @@ import androidx.room.RoomDatabase
 
 /** Plain Room for now; moves onto SQLCipher with the vault key once core/crypto exists. */
 @Database(
-    entities = [TrackerEntity::class, DataPointEntity::class, SubTypeLabelEntity::class],
-    version = 3,
-    // 2 only adds sub_type_labels; 3 only adds columns to it.
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3)],
+    entities = [
+        TrackerEntity::class,
+        DataPointEntity::class,
+        SubTypeLabelEntity::class,
+        RoutineEntity::class,
+        RoutineCompletionEntity::class,
+    ],
+    version = 4,
+    // 2 only adds sub_type_labels; 3 only adds columns to it; 4 only adds the routine tables.
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4)],
 )
 abstract class KladdeDatabase : RoomDatabase() {
     internal abstract fun trackers(): TrackerDao
@@ -19,6 +25,8 @@ abstract class KladdeDatabase : RoomDatabase() {
     internal abstract fun dataPoints(): DataPointDao
 
     internal abstract fun subTypeLabels(): SubTypeLabelDao
+
+    internal abstract fun routines(): RoutineDao
 
     companion object {
         fun open(context: Context): KladdeDatabase = Room.databaseBuilder(context, KladdeDatabase::class.java, "kladde.db").build()

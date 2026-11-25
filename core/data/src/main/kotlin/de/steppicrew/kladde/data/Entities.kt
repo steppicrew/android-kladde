@@ -77,3 +77,26 @@ internal data class SubTypeLabelEntity(
 )
 
 internal const val SUB_TYPE_SEPARATOR = "\u001F"
+
+/** A routine; its schedule is an RRULE, its time "HH:mm" in floating wall-clock time. */
+@Entity(tableName = "routines")
+internal data class RoutineEntity(
+    @PrimaryKey val id: String,
+    val title: String,
+    val rrule: String,
+    /** ISO date, yyyy-MM-dd. */
+    @ColumnInfo(name = "start_date") val startDate: String,
+    val time: String?,
+    val checkable: Boolean,
+    @ColumnInfo(name = "created_at") val createdAt: Long,
+)
+
+/** Done or skipped for one occurrence; the date is ISO yyyy-MM-dd, so text order is date order. */
+@Entity(tableName = "routine_completions", primaryKeys = ["routine_id", "date"], indices = [Index("date")])
+internal data class RoutineCompletionEntity(
+    @ColumnInfo(name = "routine_id") val routineId: String,
+    val date: String,
+    val status: String,
+    @ColumnInfo(name = "recorded_at") val recordedAt: Long,
+    val zone: String,
+)

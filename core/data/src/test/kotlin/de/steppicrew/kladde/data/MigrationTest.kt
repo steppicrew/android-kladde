@@ -58,6 +58,22 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun `3 to 4 keeps trackers and adds empty routine tables`() {
+        helper.createDatabase(DB, 3).use { db ->
+            db.execSQL(
+                "INSERT INTO trackers (id, name, type, unit, created_at, sub_types, scale_min, scale_max, source_package, source_stream) " +
+                    "VALUES ('t1', 'Beer', 'COUNTER', NULL, 0, '', NULL, NULL, NULL, NULL)",
+            )
+        }
+
+        helper.runMigrationsAndValidate(DB, 4, true).use { db ->
+            assertEquals(1, db.count("trackers"))
+            assertEquals(0, db.count("routines"))
+            assertEquals(0, db.count("routine_completions"))
+        }
+    }
+
     private fun androidx.sqlite.db.SupportSQLiteDatabase.count(table: String): Int =
         query("SELECT COUNT(*) FROM $table").use { cursor ->
             cursor.moveToFirst()

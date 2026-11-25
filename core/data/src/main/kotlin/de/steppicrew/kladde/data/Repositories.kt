@@ -2,11 +2,14 @@ package de.steppicrew.kladde.data
 
 import de.steppicrew.kladde.model.DataPoint
 import de.steppicrew.kladde.model.ExternalSource
+import de.steppicrew.kladde.model.Routine
+import de.steppicrew.kladde.model.RoutineCompletion
 import de.steppicrew.kladde.model.SubTypeLabel
 import de.steppicrew.kladde.model.SubTypeLabelStatus
 import de.steppicrew.kladde.model.Tracker
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.time.LocalDate
 
 /** Blocking calls run on the caller's thread; never call them from the main thread. */
 class TrackerRepository(
@@ -122,4 +125,37 @@ class SubTypeLabelRepository(
     ) = db.runInTransaction {
         db.subTypeLabels().find(id)?.let { db.subTypeLabels().save(update(it.toModel()).toEntity()) }
     }
+}
+
+class RoutineRepository(
+    private val db: KladdeDatabase,
+) {
+    /** A routine whose stored rule this version can't read is left out, not dropped. */
+    fun observeAll(): Flow<List<Routine>> = db.routines().observeAll().map { list -> list.mapNotNull { it.toModel() } }
+
+    fun observeCompletions(
+        from: LocalDate,
+        to: LocalDate,
+    ): Flow<List<RoutineCompletion>> =
+        db.routines().observeCompletions(from.toString(), to.toString()).map { list ->
+            list.map { it.toModel() }
+        }
+
+    fun save(routine: Routine) = db.routines().save(routine.toEntity())
+
+    /** Deletes the routine and what was ticked off for it. */
+    fun delete(id: String) =
+        db.runInTransaction {
+            db.routines().deleteCompletions(id)
+            db.routines().delete(id)
+        }
+
+    /** Records done or skipped for one occurrence, in place of an earlier answer. */
+    fun complete(completion: RoutineCompletion) = db.routines().saveCompletion(completion.toEntity())
+
+    /** Takes an answer back: the occurrence is open (or missed) again. */
+    fun reopen(
+        routineId: String,
+        date: LocalDate,
+    ) = db.routines().deleteCompletion(routineId, date.toString())
 }
