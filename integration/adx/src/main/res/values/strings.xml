@@ -14,6 +14,12 @@
     <string name="adx_connect_allow">Allow</string>
     <string name="adx_connect_cancel">Cancel</string>
     <string name="adx_connect_locked">Unlock Kladde first, then try again.</string>
+    <string name="adx_connect_more_title">%1$s wants to log more to Kladde</string>
+    <string name="adx_connect_again_title">%1$s connects again</string>
+    <string name="adx_connect_settled">Already set up</string>
+    <string name="adx_connect_settled_into">%1$s → %2$s</string>
+    <string name="adx_connect_settled_declined">%1$s: not allowed</string>
+    <string name="adx_connect_change">Change</string>
     <string name="adx_connect_close">Close</string>
     <string name="adx_connect_labels_note">If it sends an entry type Kladde doesn\'t know yet, Kladde asks you what it is, with a notification if you allow them.</string>
 

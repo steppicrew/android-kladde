@@ -25,12 +25,14 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,6 +47,7 @@ import de.steppicrew.adx.receiver.AdxConnectSession
 import de.steppicrew.adx.receiver.AdxReceiver
 import de.steppicrew.adx.receiver.AdxStreamGrant
 import de.steppicrew.kladde.model.Tracker
+import de.steppicrew.kladde.model.TrackerType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -72,6 +75,22 @@ private data class Known(
     val trackers: List<Tracker>,
     val senders: Map<String, String>,
 )
+
+/**
+ * The streams an earlier approval already settled: accepted into a tracker that still exists, or
+ * declined. A repeat approval only asks about the rest; these stay as they were unless changed.
+ */
+internal fun settledStreams(
+    proposals: List<AdxStreamProposal>,
+    earlier: Map<String, AdxStreamGrant>,
+    trackerIds: Set<String>,
+): Set<String> =
+    proposals
+        .filter { proposal ->
+            val grant = earlier[proposal.key] ?: return@filter false
+            grant.decision == AdxStreamDecision.DECLINED || grant.target in trackerIds
+        }.map { it.key }
+        .toSet()
 
 /** The ADX approval screen: per proposed stream, a new tracker, an existing one, or no. */
 class ConnectActivity : ComponentActivity() {
@@ -111,6 +130,12 @@ class ConnectActivity : ComponentActivity() {
                                 trackers = trackers,
                                 senders = senders,
                                 initial = initialChoices(session, trackers),
+                                settled =
+                                    settledStreams(
+                                        session.request.streams,
+                                        session.existing?.streams.orEmpty(),
+                                        trackers.map { it.id }.toSet(),
+                                    ),
                                 initialNames = defaultNames(session.request.streams, session.senderLabel, trackers),
                                 onAllow = { choices, names -> withNotificationPermission { approve(host, session, choices, names) } },
                                 onCancel = session::cancel,
@@ -189,10 +214,13 @@ internal fun ConnectScreen(
     trackers: List<Tracker>,
     senders: Map<String, String>,
     initial: Map<String, StreamChoice>,
+    settled: Set<String>,
     initialNames: Map<String, String>,
     onAllow: (choices: Map<String, StreamChoice>, names: Map<String, String>) -> Unit,
     onCancel: () -> Unit,
 ) {
+    var changeSettled by rememberSaveable { mutableStateOf(false) }
+    val fresh = proposals.filter { it.key !in settled }
     val choices = remember { mutableStateMapOf<String, StreamChoice>().apply { putAll(initial) } }
     val names = remember { mutableStateMapOf<String, String>().apply { putAll(initialNames) } }
     // The template, so the names follow a configuration change like the rest of the screen.
@@ -213,10 +241,17 @@ internal fun ConnectScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(stringResource(R.string.adx_connect_title, senderLabel), style = MaterialTheme.typography.headlineSmall)
-            Text(stringResource(R.string.adx_connect_explainer), style = MaterialTheme.typography.bodyMedium)
-            Text(stringResource(R.string.adx_connect_labels_note), style = MaterialTheme.typography.bodyMedium)
-            for (proposal in proposals) {
+            if (settled.isEmpty()) {
+                Text(stringResource(R.string.adx_connect_title, senderLabel), style = MaterialTheme.typography.headlineSmall)
+                Text(stringResource(R.string.adx_connect_explainer), style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.adx_connect_labels_note), style = MaterialTheme.typography.bodyMedium)
+            } else {
+                // A repeat: only what is new is asked; the rest is one summary line each.
+                val title = if (fresh.isEmpty()) R.string.adx_connect_again_title else R.string.adx_connect_more_title
+                Text(stringResource(title, senderLabel), style = MaterialTheme.typography.headlineSmall)
+            }
+            val shown = if (changeSettled) proposals else fresh
+            for (proposal in shown) {
                 StreamOptions(
                     proposal = proposal,
                     trackers = trackers.filter { AdxMapping.accepts(it, proposal) },
@@ -228,6 +263,14 @@ internal fun ConnectScreen(
                     problem = problem(proposal.key),
                 )
             }
+            if (settled.isNotEmpty() && !changeSettled) {
+                SettledSummary(
+                    proposals.filter { it.key in settled },
+                    choices,
+                    labels,
+                    onChange = { changeSettled = true },
+                )
+            }
         }
         // Pinned below the list, so a sender with many streams is still one tap to allow.
         Row(Modifier.padding(horizontal = 24.dp, vertical = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -236,6 +279,29 @@ internal fun ConnectScreen(
             }
             OutlinedButton(onClick = onCancel) { Text(stringResource(R.string.adx_connect_cancel)) }
         }
+    }
+}
+
+/** The streams an earlier approval settled, one line each, with a way to change them. */
+@Composable
+private fun SettledSummary(
+    proposals: List<AdxStreamProposal>,
+    choices: Map<String, StreamChoice>,
+    labels: Map<String, String>,
+    onChange: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(stringResource(R.string.adx_connect_settled), style = MaterialTheme.typography.titleSmall)
+        for (proposal in proposals) {
+            val line =
+                when (val choice = choices[proposal.key]) {
+                    is StreamChoice.Existing ->
+                        stringResource(R.string.adx_connect_settled_into, proposal.name, labels[choice.trackerId] ?: proposal.name)
+                    else -> stringResource(R.string.adx_connect_settled_declined, proposal.name)
+                }
+            Text(line, style = MaterialTheme.typography.bodyMedium)
+        }
+        TextButton(onClick = onChange) { Text(stringResource(R.string.adx_connect_change)) }
     }
 }
 
@@ -330,7 +396,37 @@ private fun ConnectScreenPreview() {
             trackers = emptyList(),
             senders = emptyMap(),
             initial = drinks.associate { it.key to StreamChoice.NewTracker },
+            settled = emptySet(),
             initialNames = drinks.associate { it.key to it.name },
+            onAllow = { _, _ -> },
+            onCancel = {},
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun RepeatConnectScreenPreview() {
+    // The beer counter connecting again with one new stream; the others were approved before.
+    val drinks =
+        listOf("Beer", "Wine", "Tea").map { name ->
+            AdxStreamProposal("drinks.${name.lowercase()}", name, "counter", "count")
+        }
+    val trackers = listOf("Beer", "Wine").map { Tracker(it.lowercase(), it, TrackerType.COUNTER, null, Instant.EPOCH) }
+    MaterialTheme {
+        ConnectScreen(
+            senderLabel = "Steppi's Beer Counter",
+            proposals = drinks,
+            trackers = trackers,
+            senders = emptyMap(),
+            initial =
+                mapOf(
+                    "drinks.beer" to StreamChoice.Existing(trackers[0].id),
+                    "drinks.wine" to StreamChoice.Existing(trackers[1].id),
+                    "drinks.tea" to StreamChoice.NewTracker,
+                ),
+            settled = setOf("drinks.beer", "drinks.wine"),
+            initialNames = mapOf("drinks.tea" to "Tea"),
             onAllow = { _, _ -> },
             onCancel = {},
         )
