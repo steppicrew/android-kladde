@@ -2,7 +2,6 @@ package de.steppicrew.kladde.routines
 
 import android.Manifest
 import android.app.Notification
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
@@ -33,11 +32,11 @@ internal class ReminderNotifications(
         key: OccurrenceKey,
     ) {
         if (!canPost()) return
-        ensureChannel()
+        val channel = ReminderSound(context).ensureChannel()
         val routine = occurrence.routine
         val builder =
             Notification
-                .Builder(context, CHANNEL)
+                .Builder(context, channel)
                 .setSmallIcon(R.drawable.ic_kladde_reminder)
                 .setContentTitle(routine.title)
                 .setContentText(timeText(occurrence))
@@ -96,17 +95,5 @@ internal class ReminderNotifications(
             Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
                 context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
         return permitted && manager.areNotificationsEnabled()
-    }
-
-    private fun ensureChannel() {
-        val channel =
-            NotificationChannel(CHANNEL, context.getString(R.string.routines_reminder_channel), NotificationManager.IMPORTANCE_HIGH).apply {
-                description = context.getString(R.string.routines_reminder_channel_description)
-            }
-        manager.createNotificationChannel(channel)
-    }
-
-    private companion object {
-        const val CHANNEL = "reminders"
     }
 }

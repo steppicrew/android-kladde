@@ -125,4 +125,7 @@
     <string name="routines_pause_delete_question">Diese Pause löschen? Die Routinen darin sind an ihren Tagen wieder fällig.</string>
     <string name="routines_schedule_delete_question">Diese Änderung löschen? Dann gilt der Zeitplan davor weiter.</string>
     <string name="routines_remove_extra_question">Diesen Zusatztermin entfernen?</string>
+    <string name="routines_remind_sound">Ton:</string>
+    <string name="routines_remind_silent">Lautlos</string>
+    <string name="routines_remind_sound_hint">Für alle Erinnerungen</string>
 </resources>

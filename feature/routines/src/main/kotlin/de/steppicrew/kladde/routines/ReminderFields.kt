@@ -1,7 +1,11 @@
 package de.steppicrew.kladde.routines
 
 import android.Manifest
+import android.app.Activity
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -9,14 +13,19 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -50,6 +59,7 @@ internal fun ReminderFields(
                     )
                 }
             }
+            SoundRow()
         }
     }
 }
@@ -77,3 +87,41 @@ private fun AskForNotifications(wanted: Boolean) {
         }
     }
 }
+
+/** "Ton: …" for all reminders, picked with Android's sound picker. */
+@Composable
+private fun SoundRow() {
+    val context = LocalContext.current
+    val sound = remember { ReminderSound(context) }
+    var title by remember { mutableStateOf(sound.title()) }
+    val pick =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                sound.set(result.data?.pickedSound())
+                title = sound.title()
+            }
+        }
+    val pickerTitle = stringResource(R.string.routines_remind_sound)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(pickerTitle, style = MaterialTheme.typography.bodyMedium)
+        TextButton(onClick = {
+            val intent =
+                Intent(RingtoneManager.ACTION_RINGTONE_PICKER)
+                    .putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION)
+                    .putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+                    .putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true)
+                    .putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, sound.uri)
+                    .putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, pickerTitle)
+            pick.launch(intent)
+        }) { Text(title ?: stringResource(R.string.routines_remind_silent)) }
+    }
+    Text(stringResource(R.string.routines_remind_sound_hint), style = MaterialTheme.typography.bodySmall)
+}
+
+private fun Intent.pickedSound(): Uri? =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)
+    } else {
+        @Suppress("DEPRECATION")
+        getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+    }

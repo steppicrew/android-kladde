@@ -125,4 +125,7 @@
     <string name="routines_pause_delete_question">Delete this pause? The routines in it are due again on its days.</string>
     <string name="routines_schedule_delete_question">Delete this change? The schedule before it goes on instead.</string>
     <string name="routines_remove_extra_question">Remove this extra day?</string>
+    <string name="routines_remind_sound">Sound:</string>
+    <string name="routines_remind_silent">Silent</string>
+    <string name="routines_remind_sound_hint">For all reminders</string>
 </resources>
