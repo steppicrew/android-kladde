@@ -121,4 +121,8 @@
     <string name="routines_list_from">From %1$s</string>
     <string name="routines_show_more">Show more</string>
     <string name="routines_nothing_planned">Nothing planned</string>
+    <string name="routines_delete_question">Delete “%1$s”? What you ticked off for it is deleted too.</string>
+    <string name="routines_pause_delete_question">Delete this pause? The routines in it are due again on its days.</string>
+    <string name="routines_schedule_delete_question">Delete this change? The schedule before it goes on instead.</string>
+    <string name="routines_remove_extra_question">Remove this extra day?</string>
 </resources>

@@ -79,7 +79,11 @@ internal fun OccurrenceMenu(
             Column {
                 TextButton(onClick = { picking = move }) { Text(stringResource(R.string.routines_move)) }
                 if (occurrence.isExtra) {
-                    TextButton(onClick = then(onRemoveExtra)) { Text(stringResource(R.string.routines_remove_extra)) }
+                    DeleteButton(
+                        stringResource(R.string.routines_remove_extra),
+                        stringResource(R.string.routines_remove_extra_question),
+                        then(onRemoveExtra),
+                    )
                 } else {
                     if (occurrence.status != OccurrenceStatus.CANCELLED) {
                         TextButton(onClick = then(onCancel)) { Text(stringResource(R.string.routines_cancel_once)) }

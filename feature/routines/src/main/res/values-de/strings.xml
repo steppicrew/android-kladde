@@ -121,4 +121,8 @@
     <string name="routines_list_from">Ab %1$s</string>
     <string name="routines_show_more">Mehr anzeigen</string>
     <string name="routines_nothing_planned">Nichts geplant</string>
+    <string name="routines_delete_question">„%1$s“ löschen? Auch alles, was du dafür abgehakt hast, wird gelöscht.</string>
+    <string name="routines_pause_delete_question">Diese Pause löschen? Die Routinen darin sind an ihren Tagen wieder fällig.</string>
+    <string name="routines_schedule_delete_question">Diese Änderung löschen? Dann gilt der Zeitplan davor weiter.</string>
+    <string name="routines_remove_extra_question">Diesen Zusatztermin entfernen?</string>
 </resources>

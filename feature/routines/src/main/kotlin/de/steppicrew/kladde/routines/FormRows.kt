@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -19,6 +20,10 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -95,6 +100,8 @@ internal fun SaveBar(
     onSave: () -> Unit,
     onCancel: () -> Unit,
     onDelete: () -> Unit,
+    /** Asked before deleting, e.g. "„Sport“ löschen?". */
+    deleteQuestion: String = "",
 ) {
     FlowRow(
         Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
@@ -103,11 +110,35 @@ internal fun SaveBar(
     ) {
         Button(onClick = onSave, enabled = canSave) { OneLine(R.string.routines_save) }
         OutlinedButton(onClick = onCancel) { OneLine(R.string.routines_cancel) }
-        if (canDelete) TextButton(onClick = onDelete) { OneLine(R.string.routines_delete) }
+        if (canDelete) DeleteButton(stringResource(R.string.routines_delete), deleteQuestion, onDelete)
     }
 }
 
 @Composable
 private fun OneLine(label: Int) {
     Text(stringResource(label), maxLines = 1, softWrap = false)
+}
+
+/** A button that deletes only after [question] is answered with yes: nothing is deleted by a single tap. */
+@Composable
+internal fun DeleteButton(
+    label: String,
+    question: String,
+    onDelete: () -> Unit,
+) {
+    var asking by rememberSaveable { mutableStateOf(false) }
+    TextButton(onClick = { asking = true }) { Text(label, maxLines = 1, softWrap = false) }
+    if (asking) {
+        AlertDialog(
+            onDismissRequest = { asking = false },
+            text = { Text(question) },
+            confirmButton = {
+                TextButton(onClick = {
+                    asking = false
+                    onDelete()
+                }) { Text(label) }
+            },
+            dismissButton = { TextButton(onClick = { asking = false }) { Text(stringResource(R.string.routines_cancel)) } },
+        )
+    }
 }

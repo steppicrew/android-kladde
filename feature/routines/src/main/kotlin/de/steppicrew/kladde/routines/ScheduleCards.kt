@@ -122,7 +122,13 @@ private fun ScheduleCard(
                     )
                     if (hint != null) Text(stringResource(hint), style = MaterialTheme.typography.bodySmall)
                 }
-                if (onDelete != null) TextButton(onClick = onDelete) { Text(stringResource(R.string.routines_delete)) }
+                if (onDelete != null) {
+                    DeleteButton(
+                        stringResource(R.string.routines_delete),
+                        stringResource(R.string.routines_schedule_delete_question),
+                        onDelete,
+                    )
+                }
             }
             if (sharesDay) {
                 Text(

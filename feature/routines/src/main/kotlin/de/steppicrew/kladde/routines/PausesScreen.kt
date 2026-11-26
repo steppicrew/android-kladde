@@ -153,7 +153,14 @@ private fun PauseEditor(
             }
             if (!draft.all) PausedRoutines(draft, routines) { draft = it }
         }
-        SaveBar(draft.isComplete, !isNew, onSave = { onSave(draft) }, onCancel = onCancel, onDelete = onDelete)
+        SaveBar(
+            draft.isComplete,
+            !isNew,
+            onSave = { onSave(draft) },
+            onCancel = onCancel,
+            onDelete = onDelete,
+            deleteQuestion = stringResource(R.string.routines_pause_delete_question),
+        )
     }
     picking?.let { which ->
         DateDialog(

@@ -71,7 +71,14 @@ internal fun RoutineEditor(
             GroupFields(draft, groupChoices) { draft = it }
             BlockerFields(draft, blockerChoices) { draft = it }
         }
-        SaveBar(draft.isComplete, !isNew, onSave = { onSave(draft) }, onCancel = onCancel, onDelete = onDelete)
+        SaveBar(
+            draft.isComplete,
+            !isNew,
+            onSave = { onSave(draft) },
+            onCancel = onCancel,
+            onDelete = onDelete,
+            deleteQuestion = stringResource(R.string.routines_delete_question, initial.title),
+        )
     }
     if (pickZone) {
         ZoneDialog(onPick = { draft = draft.copy(timeZone = it.id).also { pickZone = false } }, onDismiss = { pickZone = false })
