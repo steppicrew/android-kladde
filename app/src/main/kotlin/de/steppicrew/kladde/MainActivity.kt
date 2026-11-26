@@ -39,6 +39,7 @@ import de.steppicrew.kladde.adx.LabelsActivity
 import de.steppicrew.kladde.model.DataPoint
 import de.steppicrew.kladde.model.SubTypeLabel
 import de.steppicrew.kladde.model.Tracker
+import de.steppicrew.kladde.routines.Reminders
 import de.steppicrew.kladde.routines.RoutinesScreen
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -57,7 +58,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val app = application as KladdeApp
-        requestedTab.value = DebugCommand.handle(app, intent)
+        requestedTab.value = DebugCommand.handle(app, intent) ?: shownByReminder(intent)
         setContent {
             val unlocked by app.vault.state.collectAsStateWithLifecycle()
             MaterialTheme {
@@ -98,6 +99,7 @@ class MainActivity : ComponentActivity() {
                                         app.routineRepository,
                                         app.routinePauseRepository,
                                         app.routineExtraRepository,
+                                        app.reminders,
                                     )
                             }
                         }
@@ -109,8 +111,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        DebugCommand.handle(application as KladdeApp, intent)?.let { requestedTab.value = it }
+        (DebugCommand.handle(application as KladdeApp, intent) ?: shownByReminder(intent))?.let { requestedTab.value = it }
     }
+
+    /** A tap on a reminder opens the routines. */
+    private fun shownByReminder(intent: Intent?): MainTab? =
+        MainTab.ROUTINES.takeIf { intent?.getBooleanExtra(Reminders.EXTRA_SHOW_ROUTINES, false) == true }
 
     private companion object {
         const val RECENT = 100

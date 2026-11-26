@@ -105,4 +105,11 @@
         <item quantity="one">%d Minute vorher</item>
         <item quantity="other">%d Minuten vorher</item>
     </plurals>
+    <string name="routines_remind_later">In 10 Min.</string>
+    <string name="routines_reminder_channel">Erinnerungen</string>
+    <string name="routines_reminder_channel_description">Erinnerungen an Routinen, mit Erledigt und Auslassen</string>
+    <string name="routines_hint_notifications">Erinnerungen sind an, aber Kladde darf keine Benachrichtigungen zeigen.</string>
+    <string name="routines_hint_exact">Erinnerungen können bis zu 10 Minuten später kommen. Erlaube „Wecker &amp; Erinnerungen“, damit sie pünktlich kommen.</string>
+    <string name="routines_hint_allow">Erlauben</string>
+    <string name="routines_hint_not_now">Nicht jetzt</string>
 </resources>

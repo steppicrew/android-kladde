@@ -2,7 +2,7 @@
 
 # Kladde · Privacy policy
 
-*Last updated: 2026-11-25*
+*Last updated: 2026-11-26*
 
 Kladde is a private diary and personal data tracker. What you record in it stays on your device.
 
@@ -17,6 +17,10 @@ Your trackers and the entries you record, which can include health data such as 
 ## Data from other apps
 
 You can let other apps on your device log entries into Kladde, for example a drink counter. Nothing happens until you approve an app and choose which of its data you accept; the approval is tied to that app's signing certificate. Such an app can add, change and delete only its own entries and can never read anything from Kladde. This exchange happens on your device only. Kladde remembers which apps you approved, which tracker each of their data goes to, and which app each entry came from. When an app sends a kind of entry Kladde doesn't know yet, Kladde asks you what it is: in the app, and with a notification on your device if you allow notifications. On the lock screen that notification shows no details.
+
+## Reminders
+
+If you turn on a reminder for a routine, Kladde shows a notification with the routine's name at its time, also on the lock screen, with buttons to tick it off. For this the app asks Android for an alarm, which comes on the minute if you allow exact alarms. This too happens on your device only.
 
 ## No sharing
 

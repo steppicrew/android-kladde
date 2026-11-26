@@ -38,6 +38,7 @@ fun RoutinesScreen(
     repository: RoutineRepository,
     pauseRepository: RoutinePauseRepository,
     extraRepository: RoutineExtraRepository,
+    reminders: Reminders,
 ) {
     val today = rememberToday()
     val from = today.minusDays(1)
@@ -92,6 +93,7 @@ fun RoutinesScreen(
             editing = ""
             editingFrom = null
         },
+        hints = { ReminderHints(reminders, routines.any(Routine::reminds)) },
     )
     menuFor?.let { occurrence ->
         val onEdit = {
@@ -131,6 +133,9 @@ private fun ChangeOccurrence(
         onDismiss = onDismiss,
     )
 }
+
+/** Has a reminder that can come: one set, and a time on some schedule. */
+private fun Routine.reminds(): Boolean = remindBefore != null && schedules.any { it.time != null }
 
 private const val MINUTE_MS = 60_000L
 

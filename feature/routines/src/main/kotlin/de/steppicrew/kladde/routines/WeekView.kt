@@ -56,12 +56,15 @@ internal fun WeekView(
     onDoneAt: (Occurrence, LocalTime) -> Unit,
     onOpen: (Occurrence) -> Unit,
     onAdd: () -> Unit,
+    /** Shown above the days, e.g. what stands in the way of reminders. */
+    hints: @Composable () -> Unit = {},
 ) {
     Box(Modifier.fillMaxSize()) {
         if (!hasRoutines) {
             Text(stringResource(R.string.routines_empty), Modifier.padding(24.dp))
         } else {
             LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+                item(key = "hints") { hints() }
                 item(key = "pauses") { PauseBar(activePause, onPauses) }
                 for ((date, occurrences) in days) {
                     item(key = date.toString()) { DayHeader(date, today) }

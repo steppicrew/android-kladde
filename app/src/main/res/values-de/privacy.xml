@@ -15,6 +15,9 @@
     <string name="privacy_other_apps_title">Daten aus anderen Apps</string>
     <string name="privacy_other_apps_body">Du kannst anderen Apps auf deinem Gerät erlauben, Einträge in Kladde anzulegen, zum Beispiel einem Getränkezähler. Nichts passiert, bevor du eine App zulässt und auswählst, welche ihrer Daten du annimmst; die Zustimmung ist an das Signaturzertifikat dieser App gebunden. Eine solche App kann nur ihre eigenen Einträge anlegen, ändern und löschen und nie etwas aus Kladde lesen. Dieser Austausch findet nur auf deinem Gerät statt. Kladde merkt sich, welche Apps du zugelassen hast, in welchen Tracker ihre Daten gehen und von welcher App jeder Eintrag stammt. Sendet eine App eine Eintragsart, die Kladde noch nicht kennt, fragt Kladde dich, was das ist: in der App und, wenn du Benachrichtigungen erlaubst, mit einer Benachrichtigung auf deinem Gerät. Auf dem Sperrbildschirm zeigt diese Benachrichtigung keine Einzelheiten.</string>
 
+    <string name="privacy_reminders_title">Erinnerungen</string>
+    <string name="privacy_reminders_body">Wenn du für eine Routine eine Erinnerung einschaltest, zeigt Kladde zu ihrer Uhrzeit eine Benachrichtigung mit dem Namen der Routine, auch auf dem Sperrbildschirm, mit Knöpfen zum Abhaken. Dafür stellt die App bei Android einen Wecker, der minutengenau kommt, wenn du genaue Wecker erlaubst. Auch das geschieht nur auf deinem Gerät.</string>
+
     <string name="privacy_sharing_title">Keine Weitergabe</string>
     <string name="privacy_sharing_body">Deine Daten werden an niemanden weitergegeben, auch nicht an den Entwickler. Die App enthält keinen Code von Dritten, der sie erhält.</string>
 

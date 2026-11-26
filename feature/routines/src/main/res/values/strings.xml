@@ -105,4 +105,11 @@
         <item quantity="one">%d minute before</item>
         <item quantity="other">%d minutes before</item>
     </plurals>
+    <string name="routines_remind_later">In 10 min</string>
+    <string name="routines_reminder_channel">Reminders</string>
+    <string name="routines_reminder_channel_description">Reminders for routines, with Done and Skip</string>
+    <string name="routines_hint_notifications">Reminders are on, but Kladde may not show notifications.</string>
+    <string name="routines_hint_exact">Reminders may come up to 10 minutes late. Allow "Alarms &amp; reminders" for them to come on time.</string>
+    <string name="routines_hint_allow">Allow</string>
+    <string name="routines_hint_not_now">Not now</string>
 </resources>

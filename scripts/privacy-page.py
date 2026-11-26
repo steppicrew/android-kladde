@@ -39,6 +39,7 @@ SECTIONS = [
     "no_network",
     "storage",
     "other_apps",
+    "reminders",
     "sharing",
     "control",
     "changes",

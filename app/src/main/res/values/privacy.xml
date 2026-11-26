@@ -19,6 +19,9 @@
     <string name="privacy_other_apps_title">Data from other apps</string>
     <string name="privacy_other_apps_body">You can let other apps on your device log entries into Kladde, for example a drink counter. Nothing happens until you approve an app and choose which of its data you accept; the approval is tied to that app\'s signing certificate. Such an app can add, change and delete only its own entries and can never read anything from Kladde. This exchange happens on your device only. Kladde remembers which apps you approved, which tracker each of their data goes to, and which app each entry came from. When an app sends a kind of entry Kladde doesn\'t know yet, Kladde asks you what it is: in the app, and with a notification on your device if you allow notifications. On the lock screen that notification shows no details.</string>
 
+    <string name="privacy_reminders_title">Reminders</string>
+    <string name="privacy_reminders_body">If you turn on a reminder for a routine, Kladde shows a notification with the routine\'s name at its time, also on the lock screen, with buttons to tick it off. For this the app asks Android for an alarm, which comes on the minute if you allow exact alarms. This too happens on your device only.</string>
+
     <string name="privacy_sharing_title">No sharing</string>
     <string name="privacy_sharing_body">Your data is never shared with anyone, including the developer. The app contains no third-party code that receives it.</string>
 
