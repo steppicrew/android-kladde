@@ -112,4 +112,13 @@
     <string name="routines_hint_exact">Reminders may come up to 10 minutes late. Allow "Alarms &amp; reminders" for them to come on time.</string>
     <string name="routines_hint_allow">Allow</string>
     <string name="routines_hint_not_now">Not now</string>
+    <string name="routines_view_list">List</string>
+    <string name="routines_view_week">Week</string>
+    <string name="routines_view_month">Month</string>
+    <string name="routines_go_today">Today</string>
+    <string name="routines_earlier">Earlier</string>
+    <string name="routines_later">Later</string>
+    <string name="routines_list_from">From %1$s</string>
+    <string name="routines_show_more">Show more</string>
+    <string name="routines_nothing_planned">Nothing planned</string>
 </resources>

@@ -112,4 +112,13 @@
     <string name="routines_hint_exact">Erinnerungen können bis zu 10 Minuten später kommen. Erlaube „Wecker &amp; Erinnerungen“, damit sie pünktlich kommen.</string>
     <string name="routines_hint_allow">Erlauben</string>
     <string name="routines_hint_not_now">Nicht jetzt</string>
+    <string name="routines_view_list">Liste</string>
+    <string name="routines_view_week">Woche</string>
+    <string name="routines_view_month">Monat</string>
+    <string name="routines_go_today">Heute</string>
+    <string name="routines_earlier">Früher</string>
+    <string name="routines_later">Später</string>
+    <string name="routines_list_from">Ab %1$s</string>
+    <string name="routines_show_more">Mehr anzeigen</string>
+    <string name="routines_nothing_planned">Nichts geplant</string>
 </resources>

@@ -1,16 +1,10 @@
 package de.steppicrew.kladde.routines
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -21,97 +15,34 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import de.steppicrew.kladde.model.BlockRule
 import de.steppicrew.kladde.model.Occurrence
 import de.steppicrew.kladde.model.OccurrenceStatus
-import de.steppicrew.kladde.model.Recurrence
-import de.steppicrew.kladde.model.Routine
-import de.steppicrew.kladde.model.RoutinePause
-import de.steppicrew.kladde.model.RoutinePlan
 import de.steppicrew.kladde.model.ShownTime
 import de.steppicrew.kladde.model.shownTime
 import java.time.DayOfWeek
-import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
-@Composable
-internal fun WeekView(
-    days: List<Pair<LocalDate, List<Occurrence>>>,
-    today: LocalDate,
-    hasRoutines: Boolean,
-    activePause: RoutinePause?,
-    onPauses: () -> Unit,
-    onAction: (Occurrence, RowAction) -> Unit,
+/** What a row does when tapped or ticked off. */
+internal class RowCallbacks(
+    val onAction: (Occurrence, RowAction) -> Unit,
     /** Done at a time the user picked by holding "Erledigt". */
-    onDoneAt: (Occurrence, LocalTime) -> Unit,
-    onOpen: (Occurrence) -> Unit,
-    onAdd: () -> Unit,
-    /** Shown above the days, e.g. what stands in the way of reminders. */
-    hints: @Composable () -> Unit = {},
-) {
-    Box(Modifier.fillMaxSize()) {
-        if (!hasRoutines) {
-            Text(stringResource(R.string.routines_empty), Modifier.padding(24.dp))
-        } else {
-            LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-                item(key = "hints") { hints() }
-                item(key = "pauses") { PauseBar(activePause, onPauses) }
-                for ((date, occurrences) in days) {
-                    item(key = date.toString()) { DayHeader(date, today) }
-                    if (occurrences.isEmpty()) {
-                        item(key = "$date-none") {
-                            Text(
-                                stringResource(R.string.routines_day_free),
-                                Modifier.padding(vertical = 4.dp),
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
-                    }
-                    // A routine can be on a day twice when one was moved there: the planned day tells them apart.
-                    items(occurrences, key = { "$date-${it.routine.id}-${it.originalDate}" }) { occurrence ->
-                        OccurrenceRow(occurrence, rowActions(occurrence, today), onAction, onDoneAt, onOpen)
-                    }
-                    item(key = "$date-divider") { HorizontalDivider(Modifier.padding(top = 8.dp)) }
-                }
-                // Room under the last day, so the add button covers nothing.
-                item(key = "end") { Box(Modifier.padding(40.dp)) }
-            }
-        }
-        ExtendedFloatingActionButton(
-            onClick = onAdd,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
-        ) { Text(stringResource(R.string.routines_add)) }
-    }
-}
+    val onDoneAt: (Occurrence, LocalTime) -> Unit,
+    val onOpen: (Occurrence) -> Unit,
+)
 
-/** The way to the pauses, and which one is on today. */
+/** A day's heading: "Heute, 25.11.2026", or the weekday. */
 @Composable
-private fun PauseBar(
-    active: RoutinePause?,
-    onPauses: () -> Unit,
-) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            active?.let { pauseSummary(it) }.orEmpty(),
-            Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        TextButton(onClick = onPauses) { Text(stringResource(R.string.routines_pauses)) }
-    }
-}
-
-@Composable
-private fun DayHeader(
+internal fun DayHeader(
     date: LocalDate,
     today: LocalDate,
 ) {
@@ -132,8 +63,9 @@ private fun DayHeader(
     )
 }
 
+/** One occurrence: its time and title, a tap opens its menu, and its buttons. */
 @Composable
-private fun OccurrenceRow(
+internal fun OccurrenceRow(
     occurrence: Occurrence,
     actions: List<RowAction>,
     onAction: (Occurrence, RowAction) -> Unit,
@@ -145,7 +77,14 @@ private fun OccurrenceRow(
     Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
         val blocked = occurrence.status == OccurrenceStatus.BLOCKED || occurrence.status == OccurrenceStatus.CANCELLED
         val muted = blocked || occurrence.status == OccurrenceStatus.PAUSED
-        Column(Modifier.weight(1f).clickable { onOpen(occurrence) }.padding(vertical = 6.dp)) {
+        // What doesn't take place stays readable but steps back.
+        Column(
+            Modifier
+                .weight(1f)
+                .clickable { onOpen(occurrence) }
+                .padding(vertical = 6.dp)
+                .alpha(if (muted) MUTED else 1f),
+        ) {
             val shown = occurrence.shownTime(ZoneId.systemDefault())
             val time = shown?.let { shownTimeText(it) }
             Text(
@@ -181,6 +120,9 @@ private fun OccurrenceRow(
         )
     }
 }
+
+/** How strongly a row shows that doesn't take place: blocked, cancelled or paused. */
+private const val MUTED = 0.5f
 
 /** What a row's buttons do. */
 internal enum class RowAction(
@@ -269,26 +211,3 @@ private fun statusText(occurrence: Occurrence): String? =
 
 internal fun DayOfWeek.displayName(style: java.time.format.TextStyle = java.time.format.TextStyle.FULL): String =
     getDisplayName(style, java.util.Locale.getDefault())
-
-@Suppress("MagicNumber") // Sample dates and times.
-@Preview
-@Composable
-private fun WeekViewPreview() {
-    val today = LocalDate.of(2026, 11, 25)
-    val sport = Routine("s", "Sport", Recurrence.Daily, today.minusDays(1), LocalTime.of(18, 0), true, Instant.EPOCH)
-    val ruedersdorf = Routine("r", "Rüdersdorf", Recurrence.Weekly(setOf(DayOfWeek.WEDNESDAY)), today, null, false, Instant.EPOCH)
-    val plan = RoutinePlan(listOf(sport, ruedersdorf), emptyList(), listOf(BlockRule(sport.id, ruedersdorf.id)))
-    MaterialTheme {
-        WeekView(
-            days = (-1L..2).map { today.plusDays(it) }.map { it to plan.day(it, today) },
-            today = today,
-            hasRoutines = true,
-            activePause = null,
-            onPauses = {},
-            onAction = { _, _ -> },
-            onDoneAt = { _, _ -> },
-            onOpen = {},
-            onAdd = {},
-        )
-    }
-}

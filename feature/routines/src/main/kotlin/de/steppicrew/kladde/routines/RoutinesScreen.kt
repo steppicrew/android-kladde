@@ -16,9 +16,11 @@ import de.steppicrew.kladde.model.BlockRule
 import de.steppicrew.kladde.model.CompletionStatus
 import de.steppicrew.kladde.model.Ids
 import de.steppicrew.kladde.model.Occurrence
+import de.steppicrew.kladde.model.OccurrenceOverride
 import de.steppicrew.kladde.model.Routine
 import de.steppicrew.kladde.model.RoutineCompletion
 import de.steppicrew.kladde.model.RoutineExtra
+import de.steppicrew.kladde.model.RoutinePause
 import de.steppicrew.kladde.model.RoutinePlan
 import de.steppicrew.kladde.model.wouldCycle
 import kotlinx.coroutines.Dispatchers
@@ -28,11 +30,9 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.temporal.TemporalAdjusters
 
-/** Yesterday (to tick off late), today and the days up to a week ahead. */
-private const val DAYS_AHEAD = 6L
-
-/** The routines tab: the week, and the form to add or change a routine. */
+/** The routines tab: a list, a week or a month, and the form to add or change a routine. */
 @Composable
 fun RoutinesScreen(
     repository: RoutineRepository,
@@ -41,14 +41,10 @@ fun RoutinesScreen(
     reminders: Reminders,
 ) {
     val today = rememberToday()
-    val from = today.minusDays(1)
-    val to = today.plusDays(DAYS_AHEAD)
-    val routines by repository.observeAll().collectAsStateWithLifecycle(emptyList())
+    // Null until loaded, so "no routines yet" doesn't flash up on opening.
+    val loaded by repository.observeAll().collectAsStateWithLifecycle(null)
+    val routines = loaded.orEmpty()
     val rules by repository.observeRules().collectAsStateWithLifecycle(emptyList())
-    // Answers are kept under the planned day, which for a moved occurrence can lie outside the week.
-    val completions by remember(from, to) {
-        repository.observeCompletions(from.minusYears(1), to.plusYears(1))
-    }.collectAsStateWithLifecycle(emptyList())
     val overrides by repository.observeOverrides().collectAsStateWithLifecycle(emptyList())
     val pauses by pauseRepository.observeAll().collectAsStateWithLifecycle(emptyList())
     val extras by extraRepository.observeAll().collectAsStateWithLifecycle(emptyList())
@@ -79,16 +75,18 @@ fun RoutinesScreen(
         }
         return
     }
-    val plan = RoutinePlan(routines, completions, rules, overrides, pauses, extras)
-    WeekView(
-        days = generateSequence(from) { it.plusDays(1) }.takeWhile { !it.isAfter(to) }.map { it to plan.day(it, today) }.toList(),
+    RoutineViews(
+        plan = { range -> rememberPlan(repository, range, routines, rules, overrides, pauses, extras) },
         today = today,
-        hasRoutines = routines.isNotEmpty(),
+        hasRoutines = loaded?.isEmpty() != true,
         activePause = pauses.firstOrNull { it.isOn(today) },
+        callbacks =
+            RowCallbacks(
+                onAction = { occurrence, action -> io { repository.act(occurrence, action) } },
+                onDoneAt = { occurrence, time -> io { repository.doneAt(occurrence, time) } },
+                onOpen = { menuFor = it },
+            ),
         onPauses = { showPauses = true },
-        onAction = { occurrence, action -> io { repository.act(occurrence, action) } },
-        onDoneAt = { occurrence, time -> io { repository.doneAt(occurrence, time) } },
-        onOpen = { menuFor = it },
         onAdd = {
             editing = ""
             editingFrom = null
@@ -132,6 +130,33 @@ private fun ChangeOccurrence(
         onEdit = onEdit,
         onDismiss = onDismiss,
     )
+}
+
+/**
+ * The plan for [range], with what was ticked off around it: answers are kept under the planned
+ * day, which for a moved occurrence can lie outside it. Asked for by the year, so stepping
+ * through months asks once.
+ */
+@Composable
+private fun rememberPlan(
+    repository: RoutineRepository,
+    range: ClosedRange<LocalDate>,
+    routines: List<Routine>,
+    rules: List<BlockRule>,
+    overrides: List<OccurrenceOverride>,
+    pauses: List<RoutinePause>,
+    extras: List<RoutineExtra>,
+): RoutinePlan {
+    val year = range.start.year
+    val completions by remember(year) {
+        repository.observeCompletions(
+            range.start.minusYears(1).withDayOfYear(1),
+            range.start.plusYears(2).with(TemporalAdjusters.lastDayOfYear()),
+        )
+    }.collectAsStateWithLifecycle(emptyList())
+    return remember(routines, completions, rules, overrides, pauses, extras) {
+        RoutinePlan(routines, completions, rules, overrides, pauses, extras)
+    }
 }
 
 /** Has a reminder that can come: one set, and a time on some schedule. */
