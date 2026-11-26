@@ -5,4 +5,5 @@
     <string name="source_app">über %1$s</string>
     <string name="tab_entries">Einträge</string>
     <string name="tab_routines">Routinen</string>
+    <string name="done_entry">Erledigt: %1$s</string>
 </resources>

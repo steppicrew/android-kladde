@@ -88,6 +88,11 @@ internal interface RoutineDao {
         to: String,
     ): Flow<List<RoutineCompletionEntity>>
 
+    @Query(
+        "SELECT * FROM routine_completions WHERE status = 'DONE' ORDER BY COALESCE(done_at, recorded_at) DESC LIMIT :limit",
+    )
+    fun observeRecentDone(limit: Int): Flow<List<RoutineCompletionEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun saveCompletion(completion: RoutineCompletionEntity)
 

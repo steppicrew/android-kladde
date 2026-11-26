@@ -107,6 +107,21 @@ class RoutineRepositoryTest {
     }
 
     @Test
+    fun `the latest things done come first, by when they were done, without skipped ones`() {
+        routines.save(sport)
+        val early = Instant.parse("2026-11-25T06:00:00Z")
+        val late = Instant.parse("2026-11-25T20:00:00Z")
+        // Recorded late but done early: done_at decides.
+        routines.complete(RoutineCompletion(sport.id, day, CompletionStatus.DONE, late, zone, early))
+        routines.complete(RoutineCompletion(sport.id, day.plusDays(1), CompletionStatus.DONE, early.plusSeconds(60), zone))
+        routines.complete(RoutineCompletion(sport.id, day.plusDays(2), CompletionStatus.SKIPPED, late, zone))
+
+        val done = runBlocking { RoutineHistoryRepository(db).observeRecentDone(10).first() }
+
+        assertEquals(listOf(day.plusDays(1), day), done.map { it.date })
+    }
+
+    @Test
     fun `going on during pauses is stored`() {
         routines.save(sport.copy(ignoresPauses = true))
 

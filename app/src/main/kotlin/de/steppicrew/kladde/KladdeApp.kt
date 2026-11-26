@@ -8,6 +8,7 @@ import de.steppicrew.kladde.adx.LabelNotifications
 import de.steppicrew.kladde.data.DataPointRepository
 import de.steppicrew.kladde.data.KladdeDatabase
 import de.steppicrew.kladde.data.RoutineExtraRepository
+import de.steppicrew.kladde.data.RoutineHistoryRepository
 import de.steppicrew.kladde.data.RoutinePauseRepository
 import de.steppicrew.kladde.data.RoutineRepository
 import de.steppicrew.kladde.data.SubTypeLabelRepository
@@ -32,6 +33,7 @@ class KladdeApp :
     override val routineRepository by lazy { RoutineRepository(database) }
     override val routinePauseRepository by lazy { RoutinePauseRepository(database) }
     override val routineExtraRepository by lazy { RoutineExtraRepository(database) }
+    val routineHistoryRepository by lazy { RoutineHistoryRepository(database) }
     override val reminders by lazy { Reminders(this, routineRepository, routinePauseRepository, routineExtraRepository) }
 
     /** Lives as long as the process: keeps the reminder alarms in step with the routines. */

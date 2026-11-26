@@ -267,3 +267,12 @@ class RoutineExtraRepository(
         add(extra.copy(date = newDate))
     }
 }
+
+/** What was done with routines, for the entries list next to the data points. */
+class RoutineHistoryRepository(
+    private val db: KladdeDatabase,
+) {
+    /** The [limit] latest things done, latest first, by when they were done. */
+    fun observeRecentDone(limit: Int): Flow<List<RoutineCompletion>> =
+        db.routines().observeRecentDone(limit).map { list -> list.map { it.toModel() } }
+}

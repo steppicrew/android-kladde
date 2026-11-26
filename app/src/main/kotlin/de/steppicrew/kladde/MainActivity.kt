@@ -38,13 +38,19 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.steppicrew.kladde.adx.LabelsActivity
 import de.steppicrew.kladde.adx.showSystemBars
 import de.steppicrew.kladde.model.DataPoint
+import de.steppicrew.kladde.model.RoutineCompletion
 import de.steppicrew.kladde.model.SubTypeLabel
 import de.steppicrew.kladde.model.Tracker
 import de.steppicrew.kladde.routines.Reminders
 import de.steppicrew.kladde.routines.RoutinesScreen
+import java.time.Instant
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import de.steppicrew.kladde.adx.R as AdxR
+
+/** How many of the latest entries and things done the entries list shows. */
+private const val RECENT = 100
 
 /** The main screen's tabs. */
 enum class MainTab {
@@ -73,6 +79,8 @@ class MainActivity : ComponentActivity() {
                         val points by app.dataPointRepository.observeRecent(RECENT).collectAsStateWithLifecycle(emptyList())
                         val labels by app.subTypeLabelRepository.observeAll().collectAsStateWithLifecycle(emptyList())
                         val open by app.subTypeLabelRepository.observeOpen().collectAsStateWithLifecycle(emptyList())
+                        val done by app.routineHistoryRepository.observeRecentDone(RECENT).collectAsStateWithLifecycle(emptyList())
+                        val routines by app.routineRepository.observeAll().collectAsStateWithLifecycle(emptyList())
                         var tab by rememberSaveable { mutableStateOf(MainTab.ENTRIES) }
                         requestedTab.value?.let {
                             tab = it
@@ -94,7 +102,7 @@ class MainActivity : ComponentActivity() {
                             when (tab) {
                                 MainTab.ENTRIES -> {
                                     OpenLabels(open.size) { startActivity(LabelsActivity.intent(this@MainActivity)) }
-                                    RecentPoints(trackers, points, labels)
+                                    RecentEntries(trackers, points, labels, done, routines.associate { it.id to it.title })
                                 }
                                 MainTab.ROUTINES ->
                                     RoutinesScreen(
@@ -119,10 +127,6 @@ class MainActivity : ComponentActivity() {
     /** A tap on a reminder opens the routines. */
     private fun shownByReminder(intent: Intent?): MainTab? =
         MainTab.ROUTINES.takeIf { intent?.getBooleanExtra(Reminders.EXTRA_SHOW_ROUTINES, false) == true }
-
-    private companion object {
-        const val RECENT = 100
-    }
 }
 
 /** A small counter of labels still to look at, until there are none (docs/decisions/0002). */
@@ -144,13 +148,21 @@ private fun OpenLabels(
     }
 }
 
+/** Entries and things done, latest first, each with when it happened. */
 @Composable
-private fun RecentPoints(
+private fun RecentEntries(
     trackers: List<Tracker>,
     points: List<DataPoint>,
     labels: List<SubTypeLabel>,
+    done: List<RoutineCompletion>,
+    /** Routine titles by id. */
+    routineTitles: Map<String, String>,
 ) {
-    if (points.isEmpty()) {
+    val entries =
+        (points.map { Entry(it.at, it.zone, point = it) } + done.map { Entry(it.doneAt, it.zone, done = it) })
+            .sortedByDescending { it.at }
+            .take(RECENT)
+    if (entries.isEmpty()) {
         Message(stringResource(R.string.empty_state))
         return
     }
@@ -158,15 +170,22 @@ private fun RecentPoints(
     val shown = labels.associate { (it.trackerId to it.key) to it.shownName }
     val format = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
     LazyColumn(Modifier.padding(horizontal = 16.dp)) {
-        items(points, key = { it.id }) { point ->
+        items(entries, key = { it.key }) { entry ->
             Column(Modifier.padding(vertical = 8.dp)) {
-                val sub = point.subType?.let { shown[point.trackerId to it] ?: it }
-                val value = listOfNotNull(point.value?.let(::formatNumber), point.unit, sub).joinToString(" ")
-                Text("${names[point.trackerId] ?: "?"}: $value", style = MaterialTheme.typography.bodyLarge)
+                val point = entry.point
+                val title =
+                    if (point != null) {
+                        val sub = point.subType?.let { shown[point.trackerId to it] ?: it }
+                        val value = listOfNotNull(point.value?.let(::formatNumber), point.unit, sub).joinToString(" ")
+                        "${names[point.trackerId] ?: "?"}: $value"
+                    } else {
+                        stringResource(R.string.done_entry, entry.done?.let { routineTitles[it.routineId] } ?: "?")
+                    }
+                Text(title, style = MaterialTheme.typography.bodyLarge)
                 Text(
                     listOfNotNull(
-                        point.at.atZone(point.zone).format(format),
-                        point.source?.let { stringResource(R.string.source_app, it.packageName) },
+                        entry.at.atZone(entry.zone).format(format),
+                        point?.source?.let { stringResource(R.string.source_app, it.packageName) },
                     ).joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -174,6 +193,16 @@ private fun RecentPoints(
             HorizontalDivider()
         }
     }
+}
+
+/** One line of the entries list: a data point, or a routine done. */
+private class Entry(
+    val at: Instant,
+    val zone: ZoneId,
+    val point: DataPoint? = null,
+    val done: RoutineCompletion? = null,
+) {
+    val key: String get() = point?.id ?: "done-${done?.routineId}-${done?.date}"
 }
 
 private fun formatNumber(value: Double): String = if (value % 1.0 == 0.0) value.toLong().toString() else value.toString()
@@ -186,5 +215,5 @@ private fun Message(text: String) {
 @Preview
 @Composable
 private fun EmptyStatePreview() {
-    MaterialTheme { RecentPoints(emptyList(), emptyList(), emptyList()) }
+    MaterialTheme { RecentEntries(emptyList(), emptyList(), emptyList(), emptyList(), emptyMap()) }
 }
