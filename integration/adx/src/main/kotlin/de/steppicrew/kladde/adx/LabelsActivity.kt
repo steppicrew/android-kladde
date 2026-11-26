@@ -68,6 +68,7 @@ class LabelsActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        showSystemBars()
         focus = intent.getStringExtra(EXTRA_LABEL_ID)
         val host = application as KladdeAdxHost
         setContent {

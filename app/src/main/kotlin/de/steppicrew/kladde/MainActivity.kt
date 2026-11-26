@@ -36,6 +36,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.steppicrew.kladde.adx.LabelsActivity
+import de.steppicrew.kladde.adx.showSystemBars
 import de.steppicrew.kladde.model.DataPoint
 import de.steppicrew.kladde.model.SubTypeLabel
 import de.steppicrew.kladde.model.Tracker
@@ -57,6 +58,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        showSystemBars()
         val app = application as KladdeApp
         requestedTab.value = DebugCommand.handle(app, intent) ?: shownByReminder(intent)
         setContent {

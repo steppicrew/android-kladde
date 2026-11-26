@@ -106,6 +106,7 @@ class ConnectActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        showSystemBars()
         val session = AdxConnectSession.from(this) ?: return
         val host = application as KladdeAdxHost
         setContent {
