@@ -3,6 +3,7 @@ package de.steppicrew.kladde.routines
 import de.steppicrew.kladde.model.BlockRule
 import de.steppicrew.kladde.model.Recurrence
 import de.steppicrew.kladde.model.Routine
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -21,6 +22,8 @@ internal data class RoutineDraft(
     val blockers: Set<String> = emptySet(),
     /** Group names such as "Arbeit" ([Routine.groups]). */
     val groups: Set<String> = emptySet(),
+    /** Minutes before the time a reminder comes; null for none ([Routine.remindBefore]). */
+    val remindBefore: Int? = null,
 ) {
     /** Whether a card starts on the same day as another one. */
     fun sharesDay(card: ScheduleDraft): Boolean = schedules.count { it.validFrom == card.validFrom } > 1
@@ -89,12 +92,14 @@ internal data class RoutineDraft(
             groups = groups.map { it.trim() }.filterTo(HashSet()) { it.isNotEmpty() },
             // Without a time there is nothing for a zone to bind.
             timeZone = timeZone?.takeIf { hasTime }?.let(ZoneId::of),
+            // Likewise for a reminder.
+            remindBefore = remindBefore?.takeIf { hasTime }?.let { Duration.ofMinutes(it.toLong()) },
         )
     }
 
     companion object {
-        /** A new routine: one card, every day from [today]. */
-        fun new(today: LocalDate) = RoutineDraft(schedules = listOf(ScheduleDraft(today)))
+        /** A new routine: one card, every day from [today], reminding at its time once it has one. */
+        fun new(today: LocalDate) = RoutineDraft(schedules = listOf(ScheduleDraft(today)), remindBefore = 0)
 
         /** The form for an existing [routine], with what it gives way to under [rules]. */
         fun of(
@@ -107,6 +112,7 @@ internal data class RoutineDraft(
             ignoresPauses = routine.ignoresPauses,
             timeZone = routine.timeZone?.id,
             groups = routine.groups,
+            remindBefore = routine.remindBefore?.toMinutes()?.toInt(),
             blockers = rules.filter { it.routineId == routine.id }.mapTo(HashSet()) { it.blockerId },
         )
     }

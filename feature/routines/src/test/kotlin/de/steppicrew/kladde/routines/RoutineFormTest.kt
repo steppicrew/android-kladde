@@ -10,6 +10,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.DayOfWeek
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -190,6 +191,17 @@ class RoutineFormTest {
         assertEquals(ZoneId.of("Europe/Berlin"), call.timeZone)
         assertEquals(setOf("Arbeit"), call.groups)
         assertEquals(form.copy(groups = setOf("Arbeit")), RoutineDraft.of(call))
+    }
+
+    @Test
+    fun `a reminder is kept through the form, and needs a time`() {
+        val timed = RoutineDraft("Sport", listOf(ScheduleDraft(today, time = LocalTime.of(18, 0))), remindBefore = 15)
+        val sport = timed.toRoutine("r1", now)!!
+
+        assertEquals(Duration.ofMinutes(15), sport.remindBefore)
+        assertEquals(timed, RoutineDraft.of(sport))
+        assertNull(timed.copy(schedules = listOf(ScheduleDraft(today))).toRoutine("r1", now)!!.remindBefore)
+        assertEquals(0, RoutineDraft.new(today).remindBefore)
     }
 
     @Test

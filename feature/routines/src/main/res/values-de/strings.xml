@@ -98,4 +98,11 @@
     <string name="routines_every_n">alle %1$s Tage</string>
     <string name="routines_on_days">am %1$s</string>
     <string name="routines_schedule_running">Läuft gerade: tippen, um ab heute zu ändern</string>
+    <string name="routines_remind">Erinnern</string>
+    <string name="routines_remind_hint">Eine Benachrichtigung mit Erledigt und Auslassen; auf dem Sperrbildschirm zeigt sie den Namen</string>
+    <string name="routines_remind_at_time">Zur Uhrzeit</string>
+    <plurals name="routines_remind_minutes_before">
+        <item quantity="one">%d Minute vorher</item>
+        <item quantity="other">%d Minuten vorher</item>
+    </plurals>
 </resources>

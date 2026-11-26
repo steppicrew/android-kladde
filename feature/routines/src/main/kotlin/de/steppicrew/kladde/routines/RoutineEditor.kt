@@ -78,7 +78,7 @@ internal fun RoutineEditor(
     }
 }
 
-/** What holds for every schedule: the time zone (when some card has a time), ticking off, pauses. */
+/** What holds for every schedule: the time zone and reminder (when some card has a time), ticking off, pauses. */
 @Composable
 private fun ZoneAndTicking(
     draft: RoutineDraft,
@@ -92,6 +92,7 @@ private fun ZoneAndTicking(
                 onChange(draft.copy(timeZone = if (bound) ZoneId.systemDefault().id else null))
             }
             if (zone != null) OutlinedButton(onClick = onPickZone) { Text(zone) }
+            ReminderFields(draft.remindBefore) { onChange(draft.copy(remindBefore = it)) }
         }
         SwitchRow(R.string.routines_checkable, R.string.routines_checkable_hint, draft.checkable) { onChange(draft.copy(checkable = it)) }
         SwitchRow(R.string.routines_ignores_pauses, R.string.routines_ignores_pauses_hint, draft.ignoresPauses) {
@@ -165,6 +166,7 @@ private val DraftSaver =
                 it.timeZone,
                 it.blockers.toList(),
                 it.groups.toList(),
+                it.remindBefore,
             )
         },
         restore = { values ->
@@ -177,6 +179,7 @@ private val DraftSaver =
                 timeZone = values[4] as String?,
                 blockers = (values[5] as List<String>).toSet(),
                 groups = (values[6] as List<String>).toSet(),
+                remindBefore = values[7] as Int?,
             )
         },
     )

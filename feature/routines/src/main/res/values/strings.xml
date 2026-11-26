@@ -98,4 +98,11 @@
     <string name="routines_every_n">every %1$s days</string>
     <string name="routines_on_days">on the %1$s</string>
     <string name="routines_schedule_running">Running now: tap to change it from today on</string>
+    <string name="routines_remind">Remind me</string>
+    <string name="routines_remind_hint">A notification with Done and Skip; on the lock screen it shows the name</string>
+    <string name="routines_remind_at_time">At the time</string>
+    <plurals name="routines_remind_minutes_before">
+        <item quantity="one">%d minute before</item>
+        <item quantity="other">%d minutes before</item>
+    </plurals>
 </resources>
