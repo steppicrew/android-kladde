@@ -134,7 +134,7 @@ usable on the phone before the next:**
 3. Single days: move one occurrence to another date, or cancel it ("Diesmal verschieben auf…",
    "Diesmal absagen"). Conditions follow the moved/cancelled dates automatically. **Built.**
 4. Vacations: a pause from–until for **all routines by default**, or only chosen ones. **Built.**
-5. Then reminders (notifications with Erledigt / Auslassen). **Not in the first version.**
+5. Then reminders (notifications with Erledigt / Auslassen). **Built** (2026-11-26, see below).
 
 Added at the owner's request after step 4 (**built**): monthly schedules ("1st and 3rd Monday",
 "last Friday", "on the 1st and 15th"), yearly spans ("1–12 December"; within one month a plain
@@ -156,7 +156,7 @@ empty RRULE).
   `routine_pauses` (7), `routine_extras` (8), `routine_schedule_versions` (9),
   `routines.ignores_pauses` (10), `occurrence_overrides.new_time` + `routine_completions.done_at`
   (11), `routines.time_zone` (12), `routine_groups` (13), `routine_pauses.groups` (14); DB 15
-  turned schedules around: the `routines` row holds the base schedule (from `start_date`),
+  turned schedules around (16 adds `routines.remind_before`): the `routines` row holds the base schedule (from `start_date`),
   `routine_schedule_versions` the later changes (`Routine.changes`, `withSchedules`). The form
   shows them as cards by start date: the one in effect today and later ones, earlier ones on
   request; each can be edited, a change card deleted (the one before it goes on), "Änderung
@@ -172,6 +172,21 @@ empty RRULE).
   covers all its routines, also ones that join the group later (`RoutinePause.groups`, DB 14).
   A past day not ticked off (`MISSED`, derived) shows as "Ausgelassen" and can still be ticked
   "Erledigt"; so can a past `SKIPPED` one.
+  Reminders (DB 16, `routines.remind_before` in minutes, null = off; decided 2026-11-26): per
+  routine on/off and at the time or 5/15/30/60 min before, only for routines with a time; new
+  routines default on, existing ones stayed off. `nextReminders` in `core/model` finds each
+  routine's next open occurrence or event (moved time, own zone if bound); `Reminders` keeps one
+  `AlarmManager` alarm per routine, set again on every change to routines (watched in `KladdeApp`),
+  boot, update, clock/zone change and exact-alarm permission change (`RescheduleReceiver`). Exact
+  alarms if the user allows them (a hint asks once, "Nicht jetzt" is kept), else within 10 min.
+  The notification shows the title on the lock screen too (owner's choice, `VISIBILITY_PUBLIC`),
+  with Erledigt / Auslassen (checkable only) / "In 10 Min."; tapping it opens the routines tab.
+  The sound is picked in the form for all reminders (`ReminderSound`: Android fixes a channel's
+  sound, so a new choice makes a new channel). Deleting anything asks first (`DeleteButton`).
+  Not yet: nagging, quiet hours, pending completions from a locked vault (no vault yet).
+  Views (2026-11-26): Liste (four weeks from a day, days with something on them, "Mehr anzeigen"),
+  Woche (the day before + 6) and Monat (grid with a dot per occurrence, paused days shaded, the
+  chosen day listed below, swipe to turn); chosen at the top and kept; the title picks any date.
 
 The full design below is the target; the first version is the subset above.
 
@@ -403,7 +418,7 @@ Privacy policy (linked from Play): https://steppicrew.github.io/android-kladde/
 - Every sentence is a claim about current behaviour — **change the text in the same commit
   as the behaviour.** It currently promises: no `INTERNET` permission, no analytics /
   crash reporting / ads, data only in app-private storage, cloud backup off
-  (`allowBackup="false"`), ADX senders write-only and approved per app + cert, new entry
+  (`allowBackup="false"`), reminders show the routine's name, also on the lock screen, ADX senders write-only and approved per app + cert, new entry
   types asked about in the app and by a notification without details on the lock screen. Adding
   sync, export, a revoke screen or at-rest encryption means updating it.
 - Play Console declarations must match the shipped build — **remind the owner to update
@@ -510,7 +525,6 @@ End-to-end tests against ADX use the sample sender from `../android-apx`
 - Attachments (photos) in v1 or later? (Affects sync size and design.)
 - Routines: which device fires reminders when several are synced (all? phone only?
   per-device setting?) — avoid duplicate notifications.
-- Routines: exact-alarm permission handling on Android 14+ (fallback behaviour).
 - Block rules: should events from the user's *calendar* (read-only) also be able to block
   routines? Useful, but needs calendar read permission and a matching rule (calendar/keyword).
 - Calendar mirror: in v1 or later? Two-way edits worth the complexity?
