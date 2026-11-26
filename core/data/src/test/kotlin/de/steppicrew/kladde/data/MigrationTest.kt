@@ -258,6 +258,20 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun `15 to 16 keeps routines, with no reminder`() {
+        helper.createDatabase(DB, 15).use { db ->
+            db.execSQL(
+                "INSERT INTO routines (id, title, rrule, start_date, time, checkable, created_at, ignores_pauses) " +
+                    "VALUES ('r1', 'Sport', 'FREQ=DAILY', '2026-11-25', '18:00', 1, 0, 0)",
+            )
+        }
+
+        helper.runMigrationsAndValidate(DB, 16, true).use { db ->
+            assertEquals(listOf("Sport|null"), db.rows("SELECT title, remind_before FROM routines"))
+        }
+    }
+
     private fun androidx.sqlite.db.SupportSQLiteDatabase.rows(sql: String): List<String> =
         query(sql).use { cursor ->
             generateSequence {

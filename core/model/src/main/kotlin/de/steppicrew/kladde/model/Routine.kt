@@ -1,5 +1,6 @@
 package de.steppicrew.kladde.model
 
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -53,6 +54,8 @@ data class Routine(
     val timeZone: ZoneId? = null,
     /** Groups such as "Arbeit" or "Privat", e.g. to pause all work routines at once. */
     val groups: Set<String> = emptySet(),
+    /** How long before its time a reminder comes (zero: at the time); null for no reminder. Needs a time. */
+    val remindBefore: Duration? = null,
 ) {
     private val base get() = ScheduleVersion(startDate, recurrence, time)
 

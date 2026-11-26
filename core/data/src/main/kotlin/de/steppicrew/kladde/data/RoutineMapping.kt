@@ -6,6 +6,7 @@ import de.steppicrew.kladde.model.Routine
 import de.steppicrew.kladde.model.RoutineCompletion
 import de.steppicrew.kladde.model.RoutinePause
 import de.steppicrew.kladde.model.ScheduleVersion
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -27,6 +28,7 @@ internal fun RoutineEntity.toModel(
             createdAt = Instant.ofEpochMilli(createdAt),
             ignoresPauses = ignoresPauses,
             groups = groups,
+            remindBefore = remindBefore?.let { Duration.ofMinutes(it.toLong()) },
             // A zone this device doesn't know falls back to floating time rather than losing the routine.
             timeZone = timeZone?.let { runCatching { ZoneId.of(it) }.getOrNull() },
             changes =
@@ -53,6 +55,7 @@ internal fun Routine.toEntity() =
         createdAt = createdAt.toEpochMilli(),
         ignoresPauses = ignoresPauses,
         timeZone = timeZone?.id,
+        remindBefore = remindBefore?.toMinutes()?.toInt(),
     )
 
 internal fun RoutineCompletionEntity.toModel() =

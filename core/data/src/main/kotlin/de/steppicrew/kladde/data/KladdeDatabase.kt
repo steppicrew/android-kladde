@@ -23,12 +23,12 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ScheduleVersionEntity::class,
         RoutineGroupEntity::class,
     ],
-    version = 15,
+    version = 16,
     // Each step only adds: 2 sub_type_labels, 3 columns to it, 4 the routine tables, 5 block_rules,
     // 6 occurrence_overrides, 7 routine_pauses, 8 routine_extras, 9 routine_schedule_versions,
     // 10 routines.ignores_pauses, 11 occurrence_overrides.new_time and routine_completions.done_at,
     // 12 routines.time_zone, 13 routine_groups, 14 routine_pauses.groups.
-    // 15 changes no table but turns the schedules around ([MIGRATION_14_15]).
+    // 15 changes no table but turns the schedules around ([MIGRATION_14_15]); 16 adds routines.remind_before.
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
         AutoMigration(from = 2, to = 3),
@@ -43,6 +43,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         AutoMigration(from = 11, to = 12),
         AutoMigration(from = 12, to = 13),
         AutoMigration(from = 13, to = 14),
+        AutoMigration(from = 15, to = 16),
     ],
 )
 abstract class KladdeDatabase : RoomDatabase() {

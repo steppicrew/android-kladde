@@ -62,7 +62,7 @@ data class RoutinePause(
  * takes place that day blocks, so moving or cancelling one carries through by itself.
  */
 class RoutinePlan(
-    private val routines: List<Routine>,
+    val routines: List<Routine>,
     completions: List<RoutineCompletion>,
     rules: List<BlockRule> = emptyList(),
     overrides: List<OccurrenceOverride> = emptyList(),

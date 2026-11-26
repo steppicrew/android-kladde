@@ -19,6 +19,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.time.DayOfWeek
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -96,6 +97,13 @@ class RoutineRepositoryTest {
         routines.save(sport.copy(timeZone = ZoneId.of("Europe/Berlin")))
 
         assertEquals(ZoneId.of("Europe/Berlin"), all().single().timeZone)
+    }
+
+    @Test
+    fun `a reminder is stored in minutes before the time`() {
+        routines.save(sport.copy(remindBefore = Duration.ofMinutes(15)))
+
+        assertEquals(Duration.ofMinutes(15), all().single().remindBefore)
     }
 
     @Test
