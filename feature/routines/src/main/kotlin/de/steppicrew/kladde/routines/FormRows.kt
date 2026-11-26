@@ -4,6 +4,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -81,7 +83,11 @@ internal fun LongPressTextButton(
     )
 }
 
-/** Save, Cancel and, for something that exists already, Delete, below a form. */
+/**
+ * Save, Cancel and, for something that exists already, Delete, below a form. With large text the
+ * buttons move to a second line rather than breaking their labels.
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun SaveBar(
     canSave: Boolean,
@@ -90,9 +96,18 @@ internal fun SaveBar(
     onCancel: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    Row(Modifier.padding(horizontal = 24.dp, vertical = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Button(onClick = onSave, enabled = canSave) { Text(stringResource(R.string.routines_save)) }
-        OutlinedButton(onClick = onCancel) { Text(stringResource(R.string.routines_cancel)) }
-        if (canDelete) TextButton(onClick = onDelete) { Text(stringResource(R.string.routines_delete)) }
+    FlowRow(
+        Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Button(onClick = onSave, enabled = canSave) { OneLine(R.string.routines_save) }
+        OutlinedButton(onClick = onCancel) { OneLine(R.string.routines_cancel) }
+        if (canDelete) TextButton(onClick = onDelete) { OneLine(R.string.routines_delete) }
     }
+}
+
+@Composable
+private fun OneLine(label: Int) {
+    Text(stringResource(label), maxLines = 1, softWrap = false)
 }

@@ -58,11 +58,8 @@ internal fun ScheduleCards(
         onChange(draft.added(maxOf(today, openedAt)))
     }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.routines_schedules), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
-            val add = stringResource(R.string.routines_schedule_add)
-            FilledTonalButton(onClick = addChange, modifier = Modifier.semantics { contentDescription = add }) { Text("+") }
-        }
+        Text(stringResource(R.string.routines_schedules), style = MaterialTheme.typography.titleSmall)
+        Text(stringResource(R.string.routines_schedules_hint), style = MaterialTheme.typography.bodySmall)
         val hidden = draft.schedules.size - shown.size
         if (hidden > 0) {
             TextButton(onClick = { showEarlier = true }) { Text(stringResource(R.string.routines_schedules_earlier, hidden)) }
@@ -93,8 +90,9 @@ internal fun ScheduleCards(
                 earliest = today,
             )
         }
-        // Below the cards, so the "+" stays next to the list it adds to.
-        Text(stringResource(R.string.routines_schedules_hint), style = MaterialTheme.typography.bodySmall)
+        // Right below the last card, as the next one in the list.
+        val add = stringResource(R.string.routines_schedule_add)
+        FilledTonalButton(onClick = addChange, modifier = Modifier.semantics { contentDescription = add }) { Text("+") }
     }
 }
 
