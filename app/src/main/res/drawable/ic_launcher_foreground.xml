@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The notebook of art/icon.svg: cover, elastic band, check mark. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillAlpha="0.10"
+        android:fillColor="#000000"
+        android:pathData="M40,32h31a4,4 0,0 1,4 4v41a4,4 0,0 1,-4 4h-31a4,4 0,0 1,-4 -4v-41a4,4 0,0 1,4 -4z" />
+    <path
+        android:fillColor="#FFFDF7"
+        android:pathData="M40.5,30h29a3.5,3.5 0,0 1,3.5 3.5v41a3.5,3.5 0,0 1,-3.5 3.5h-29a3.5,3.5 0,0 1,-3.5 -3.5v-41a3.5,3.5 0,0 1,3.5 -3.5z" />
+    <path
+        android:fillColor="#E4DCCB"
+        android:pathData="M70,32h1v44h-1z" />
+    <path
+        android:fillColor="#2F5D62"
+        android:pathData="M37,28h28a4,4 0,0 1,4 4v42a4,4 0,0 1,-4 4h-28a4,4 0,0 1,-4 -4v-42a4,4 0,0 1,4 -4z" />
+    <path
+        android:fillColor="#24494D"
+        android:pathData="M37,28h3v50h-3a4,4 0,0 1,-4 -4v-42a4,4 0,0 1,4 -4z" />
+    <path
+        android:fillColor="#E07A3F"
+        android:pathData="M62,28h4v50h-4z" />
+    <path
+        android:pathData="M43.5,54L50,60.5L58.5,46.5"
+        android:strokeWidth="5"
+        android:strokeColor="#F6EEDF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

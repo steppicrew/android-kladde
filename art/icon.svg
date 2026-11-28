@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="108" height="108">
+  <!-- Kladde app icon on the adaptive-icon grid: 108 x 108, shapes inside the 66-unit safe circle.
+       Mirrored by res/drawable/ic_launcher_*.xml; scripts/render-art.sh makes the Play PNGs. -->
+  <rect id="background" width="108" height="108" fill="#F3E9D8"/>
+  <g id="foreground">
+    <rect x="36" y="32" width="39" height="49" rx="4" fill="#000000" fill-opacity="0.10"/>
+    <rect x="37" y="30" width="36" height="48" rx="3.5" fill="#FFFDF7"/>
+    <rect x="70" y="32" width="1" height="44" fill="#E4DCCB"/>
+    <rect x="33" y="28" width="36" height="50" rx="4" fill="#2F5D62"/>
+    <path d="M37 28 h3 v50 h-3 a4 4 0 0 1 -4 -4 v-42 a4 4 0 0 1 4 -4 z" fill="#24494D"/>
+    <rect x="62" y="28" width="4" height="50" fill="#E07A3F"/>
+    <path d="M43.5 54 L50 60.5 L58.5 46.5" fill="none" stroke="#F6EEDF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
