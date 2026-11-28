@@ -495,6 +495,11 @@ the same one), outside the repo — **it can't be regenerated; never overwrite i
 `./scripts/check-keystore.sh` checks key and password, `./gw bundleRelease` signs with it (debug
 key as fallback without one), `./gw publishReleaseBundle` uploads to the internal track
 (Gradle Play Publisher, service account `PLAY_SERVICE_ACCOUNT_JSON`; `-Pplay.track=…` for others).
+Store graphics live in `app/src/main/play/listings/{de-DE,en-US}/graphics/` (`./gw publishListing`):
+icon and feature graphic from `art/*.svg` via `./scripts/render-art.sh`; phone screenshots from
+`./scripts/play-screenshots.sh` (emulator `Kladde_API36`, 1080×2160, made-up data from the debug-only
+`demo:de|en` command — never the owner's phone). **Retake screenshots only when something visible on
+those screens changed**; the script keeps a file that came out the same.
 
 On the phone (see the `android-device-testing` skill), the debug build has a `cmd` extra,
 read only in `src/debug` (the `src/release` twin is a no-op). Logs use tag `Kladde`:

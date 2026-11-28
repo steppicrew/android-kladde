@@ -4,6 +4,7 @@
 # with art/icon.svg by hand.
 #   art/build/play-icon-512.png               Play listing icon (full square; Play rounds it)
 #   art/build/feature-graphic-{de,en}.png     Play feature graphic, 1024 x 500
+# and copies them into app/src/main/play/listings/ for Gradle Play Publisher.
 set -euo pipefail
 cd "$(dirname "$0")/../art"
 mkdir -p build
@@ -15,3 +16,11 @@ for lang in de en; do
     rsvg-convert -w 1024 -h 500 "feature-graphic-$lang.svg" -o "build/feature-graphic-$lang.png"
 done
 ls -1 build/*.png
+
+# Where Gradle Play Publisher picks them up (./gw publishListing).
+play=../app/src/main/play/listings
+for listing in de-DE en-US; do
+    mkdir -p "$play/$listing/graphics/icon" "$play/$listing/graphics/feature-graphic"
+    cp build/play-icon-512.png "$play/$listing/graphics/icon/1.png"
+    cp "build/feature-graphic-${listing%-*}.png" "$play/$listing/graphics/feature-graphic/1.png"
+done
