@@ -489,6 +489,13 @@ Put new local configuration in `.env` + `.env.sample`, not in shell exports or
 ./gw ktlintCheck detekt                              # lint
 ```
 
+Release (settings in `.env`, see `.env.sample`): the upload key is
+`~/.android-keys/kladde-upload.jks` (alias `kladde-upload`, store password in `.env`, the key has
+the same one), outside the repo — **it can't be regenerated; never overwrite it**.
+`./scripts/check-keystore.sh` checks key and password, `./gw bundleRelease` signs with it (debug
+key as fallback without one), `./gw publishReleaseBundle` uploads to the internal track
+(Gradle Play Publisher, service account `PLAY_SERVICE_ACCOUNT_JSON`; `-Pplay.track=…` for others).
+
 On the phone (see the `android-device-testing` skill), the debug build has a `cmd` extra,
 read only in `src/debug` (the `src/release` twin is a no-op). Logs use tag `Kladde`:
 
