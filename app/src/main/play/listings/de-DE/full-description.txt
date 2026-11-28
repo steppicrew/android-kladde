@@ -1,0 +1,28 @@
+Kladde ist ein privates Notizbuch für deinen Alltag: wiederkehrende Aufgaben und Termine, die dich erinnern, und Einträge, die du abhakst oder aus anderen Apps bekommst. Alles bleibt auf deinem Handy.
+
+Kladde ist noch jung. Diese Version kann Routinen und Einträge; Tagebuch, eigene Werte mit Diagrammen, Export und verschlüsselte Synchronisierung sind geplant.
+
+ROUTINEN
+• Täglich, an bestimmten Wochentagen, alle paar Tage, monatlich („1. und 3. Montag“, „am Monatsletzten“) oder jährlich („1.–12. Dezember“)
+• Mit oder ohne Uhrzeit – abhaken lassen oder einfach stattfinden lassen, wie ein Termin
+• Bedingungen: „Sport, aber nicht an Tagen mit Chorprobe“ – fällt die Chorprobe aus, ist der Sport wieder da
+• Einzelne Tage verschieben, absagen oder einen zusätzlichen Tag einplanen
+• Pausen und Urlaub für alle Routinen oder nur einige, auch für Gruppen wie „Arbeit“
+• Zeitplan ändern ab einem Datum, ohne dass die Vergangenheit sich ändert
+• Zeitzonen: „18 Uhr, wo immer ich bin“ oder fest „18 Uhr Berlin“ auf Reisen
+• Ansichten: Liste, Woche oder Monat, mit Sprung zu jedem Datum
+
+ERINNERUNGEN
+• Zur Uhrzeit oder 5 bis 60 Minuten vorher, auf Wunsch minutengenau
+• „Erledigt“, „Auslassen“ und „In 10 Min.“ direkt in der Benachrichtigung
+• Eigener Ton für Erinnerungen
+
+EINTRÄGE
+• Alles, was du erledigt hast, mit Uhrzeit
+• Werte aus anderen Apps, z. B. Getränke aus „Steppi's Beer Counter“ – nur von Apps, die du einzeln erlaubst, und diese können nur schreiben, nie lesen
+
+PRIVAT
+• Kladde hat keine Internet-Berechtigung: Deine Daten können das Handy gar nicht verlassen
+• Keine Werbung, keine Analyse, keine Absturzberichte, kein Konto
+• Keine Cloud-Sicherung durch Android
+• Datenschutzerklärung: https://steppicrew.github.io/android-kladde/

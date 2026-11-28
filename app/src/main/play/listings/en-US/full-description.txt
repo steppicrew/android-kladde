@@ -1,0 +1,28 @@
+Kladde is a private notebook for your everyday life: recurring tasks and events that remind you, and entries that you tick off or receive from other apps. Everything stays on your phone.
+
+Kladde is young. This version does routines and entries; a diary, your own trackers with charts, export and encrypted sync are planned.
+
+ROUTINES
+• Daily, on chosen weekdays, every few days, monthly ("1st and 3rd Monday", "last day of the month") or yearly ("1–12 December")
+• With or without a time – tick them off, or just let them happen, like an appointment
+• Conditions: "workout, but not on days with choir practice" – if choir is cancelled, the workout is back
+• Move or cancel single days, or add an extra one
+• Pauses and vacations for all routines or only some, also for groups such as "Work"
+• Change a schedule from a date on, without rewriting the past
+• Time zones: "6 pm wherever I am" or a fixed "6 pm Berlin" while travelling
+• Views: list, week or month, and jump to any date
+
+REMINDERS
+• At the time or 5 to 60 minutes before, to the minute if you allow it
+• "Done", "Skip" and "In 10 min" right in the notification
+• Your own reminder sound
+
+ENTRIES
+• Everything you ticked off, with its time
+• Values from other apps, e.g. drinks from "Steppi's Beer Counter" – only from apps you allow one by one, and they can only write, never read
+
+PRIVATE
+• Kladde has no internet permission: your data can't leave your phone
+• No ads, no analytics, no crash reporting, no account
+• No Android cloud backup
+• Privacy policy: https://steppicrew.github.io/android-kladde/

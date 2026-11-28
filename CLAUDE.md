@@ -500,6 +500,10 @@ icon and feature graphic from `art/*.svg` via `./scripts/render-art.sh`; phone s
 `./scripts/play-screenshots.sh` (emulator `Kladde_API36`, 1080×2160, made-up data from the debug-only
 `demo:de|en` command — never the owner's phone). **Retake screenshots only when something visible on
 those screens changed**; the script keeps a file that came out the same.
+Listing texts sit beside them (`title.txt`, `short-description.txt` ≤ 80 chars, `full-description.txt`);
+every claim must match the shipped build. A **new language** has to be published texts-only first
+(move its `graphics/` aside): the plugin uploads images in parallel and fails while the listing
+doesn't exist yet. Play Console: default language en-US.
 
 On the phone (see the `android-device-testing` skill), the debug build has a `cmd` extra,
 read only in `src/debug` (the `src/release` twin is a no-op). Logs use tag `Kladde`:
